@@ -13,11 +13,13 @@
     "@typescript-eslint/parser": "^7.1.1",
     "@vercel/ncc": "^0.38.1",
     "eslint": "^8.57.0",
+    "husky": "^9.0.11",
     "prettier": "^3.2.5",
     "typescript": "^5.4.2"
   },
   "scripts": {
     "build": "tsc --outDir build && ncc build -o dist ./index.ts",
-    "prettify": "prettier --write src/**/*.ts index.ts"
+    "prettify": "prettier --write src/**/*.ts index.ts",
+    "prepare": "husky"
   }
 }

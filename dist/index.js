@@ -31795,7 +31795,9 @@ async function retrieveTags(data) {
 async function assertTags(data) {
     const tags = data.get("tags");
     if (!tags || tags.length === 0) {
-        throw new Error("No tags found. Skipping tags handling.", { cause: "no-tags" });
+        throw new Error("No tags found. Skipping tags handling.", {
+            cause: "no-tags",
+        });
     }
     return Promise.resolve(data);
 }
