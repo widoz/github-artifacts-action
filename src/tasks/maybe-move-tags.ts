@@ -1,19 +1,18 @@
 import * as core from "@actions/core";
 import { createGit } from "../create-git";
 
-type Data = Map<string, any>;
+type Tags = Set<string>;
 
 export async function maybeMoveTags(): Promise<void> {
-  return Promise.resolve(new Map())
-    .then((data) => {
+  return Promise.resolve(new Set<string>())
+    .then((tags) => {
       core.startGroup("🗄️ Start handling tags.");
-      return data;
+      return tags;
     })
     .then(retrieveTags)
     .then(assertTags)
-    .then(createTemporaryBranch)
     .then(toggleTags)
-    .then(removeTemporaryBranch)
+    .then(() => {})
     .catch((error: Error) => {
       if (error.cause === "no-tags") {
         core.info(" No tags found. Skipping tags handling.");
@@ -26,85 +25,52 @@ export async function maybeMoveTags(): Promise<void> {
     .finally(() => core.endGroup());
 }
 
-async function retrieveTags(data: Map<string, any>): Promise<Data> {
+async function retrieveTags(tags: Tags): Promise<Tags> {
   const git = createGit();
 
   return git
     .tags(["--contains"])
     .then((tags) => tags.all)
-    .then((tags) => {
-      core.info(`Retrieved tags: ${tags.join("\n")}`);
-      return data.set("tags", tags);
+    .then((rawTags) => {
+      core.info(`Retrieved tags: ${rawTags.join("\n")}`);
+      rawTags.forEach((tag) => tags.add(tag));
+      return tags;
     });
 }
 
-async function assertTags(data: Data): Promise<Data> {
-  const tags = data.get("tags");
-  if (!tags || tags.length === 0) {
+async function assertTags(tags: Tags): Promise<Tags> {
+  if (!tags || tags.size === 0) {
     throw new Error("No tags found. Skipping tags handling.", {
       cause: "no-tags",
     });
   }
-  return Promise.resolve(data);
+  return Promise.resolve(tags);
 }
 
-async function createTemporaryBranch(data: Map<string, any>): Promise<Data> {
+async function toggleTags(tags: Tags): Promise<Tags> {
+  return removeTags(tags).then(createTags);
+}
+
+async function removeTags(tags: Tags): Promise<Tags> {
   const git = createGit();
-
-  return git
-    .revparse(["--short", "HEAD"])
-    .then((currentHash) => `ci-tag-${currentHash}`)
-    .then((branchName) => {
-      data.set("branchName", branchName);
-      core.info(`Branch ${branchName} created successfully.`);
-      return branchName;
-    })
-    .then((branchName) => {
-      git.checkoutLocalBranch(branchName);
-      return branchName;
-    })
-    .then((branchName) => git.push(["-u", "origin", branchName]))
-    .then(() => data);
-}
-
-async function toggleTags(data: Data): Promise<Data> {
-  return removeTags(data).then(createTags);
-}
-
-async function removeTags(data: Data): Promise<Data> {
-  const git = createGit();
-  const tags = data.get("tags");
 
   core.info("Removing Existing Tags.");
 
   return git.tag(["-d", ...tags]).then(() => {
     core.info("Tags removed successfully.");
-    return data;
+    return tags;
   });
 }
 
-async function createTags(data: Data): Promise<Data> {
+async function createTags(tags: Tags): Promise<Tags> {
   const git = createGit();
-  const tags: string[] = data.get("tags");
 
   core.info(`Creating Tags: ${tags}.`);
 
-  return Promise.all(tags.map(async (tag) => git.addTag(tag)))
+  return Promise.all([...tags].map(async (tag) => git.addTag(tag)))
     .then(() => git.pushTags())
     .then(() => {
       core.info("Tags created successfully.");
-      return data;
+      return tags;
     });
-}
-
-async function removeTemporaryBranch(data: Data): Promise<void> {
-  const git = createGit();
-  const branchName = data.get("branchName");
-  core.info(`Removing branch: ${branchName}.`);
-
-  return git
-    .checkout("--detach")
-    .then(() => git.deleteLocalBranch(branchName))
-    .then(() => git.push(["--delete", "origin", branchName]))
-    .then(() => {});
 }

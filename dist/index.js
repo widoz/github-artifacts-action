@@ -31668,12 +31668,14 @@ const core = __importStar(__nccwpck_require__(2186));
 const create_artifacts_1 = __nccwpck_require__(1692);
 const maybe_move_tags_1 = __nccwpck_require__(1885);
 const push_assets_1 = __nccwpck_require__(6545);
+const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 async function main() {
     Promise.resolve()
+        .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
         .then(create_artifacts_1.createArtifacts)
         .then(push_assets_1.pushAssets)
         .then(maybe_move_tags_1.maybeMoveTags)
-        .catch(error => core.setFailed(`Failed to create and push artifacts: ${error}`));
+        .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
 exports["default"] = main;
 
@@ -31728,6 +31730,74 @@ exports.createArtifacts = createArtifacts;
 
 /***/ }),
 
+/***/ 5330:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.maybeCreateTemporaryBranch = void 0;
+const create_git_1 = __nccwpck_require__(6704);
+const core = __importStar(__nccwpck_require__(2186));
+async function maybeCreateTemporaryBranch() {
+    const git = (0, create_git_1.createGit)();
+    return (isDetached()
+        .then(() => {
+        return git.revparse(["--short", "HEAD"]);
+    })
+        .then((currentHash) => {
+        return `ci-tag-${currentHash}`;
+    })
+        .then((branchName) => {
+        git.checkoutLocalBranch(branchName);
+        return branchName;
+    })
+        .then((branchName) => {
+        core.info(`Branch ${branchName} created successfully.`);
+        //return branchName;
+    })
+        // .then((branchName) => {
+        //   git.push(["-u", "origin", branchName]);
+        // })
+        .catch(() => {
+        core.info("Skipping temporary branch creation.");
+    }));
+}
+exports.maybeCreateTemporaryBranch = maybeCreateTemporaryBranch;
+async function isDetached() {
+    return new Promise((resolve, reject) => {
+        (0, create_git_1.createGit)()
+            .revparse(["--abbrev-ref", "HEAD"])
+            .then((branchName) => (branchName === "HEAD" ? resolve() : reject()));
+    });
+}
+
+
+/***/ }),
+
 /***/ 1885:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -31761,16 +31831,15 @@ exports.maybeMoveTags = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const create_git_1 = __nccwpck_require__(6704);
 async function maybeMoveTags() {
-    return Promise.resolve(new Map())
-        .then((data) => {
+    return Promise.resolve(new Set())
+        .then((tags) => {
         core.startGroup("🗄️ Start handling tags.");
-        return data;
+        return tags;
     })
         .then(retrieveTags)
         .then(assertTags)
-        .then(createTemporaryBranch)
         .then(toggleTags)
-        .then(removeTemporaryBranch)
+        .then(() => { })
         .catch((error) => {
         if (error.cause === "no-tags") {
             core.info(" No tags found. Skipping tags handling.");
@@ -31782,74 +31851,45 @@ async function maybeMoveTags() {
         .finally(() => core.endGroup());
 }
 exports.maybeMoveTags = maybeMoveTags;
-async function retrieveTags(data) {
+async function retrieveTags(tags) {
     const git = (0, create_git_1.createGit)();
     return git
         .tags(["--contains"])
         .then((tags) => tags.all)
-        .then((tags) => {
-        core.info(`Retrieved tags: ${tags.join("\n")}`);
-        return data.set("tags", tags);
+        .then((rawTags) => {
+        core.info(`Retrieved tags: ${rawTags.join("\n")}`);
+        rawTags.forEach((tag) => tags.add(tag));
+        return tags;
     });
 }
-async function assertTags(data) {
-    const tags = data.get("tags");
-    if (!tags || tags.length === 0) {
+async function assertTags(tags) {
+    if (!tags || tags.size === 0) {
         throw new Error("No tags found. Skipping tags handling.", {
             cause: "no-tags",
         });
     }
-    return Promise.resolve(data);
+    return Promise.resolve(tags);
 }
-async function createTemporaryBranch(data) {
+async function toggleTags(tags) {
+    return removeTags(tags).then(createTags);
+}
+async function removeTags(tags) {
     const git = (0, create_git_1.createGit)();
-    return git
-        .revparse(["--short", "HEAD"])
-        .then((currentHash) => `ci-tag-${currentHash}`)
-        .then((branchName) => {
-        data.set("branchName", branchName);
-        core.info(`Branch ${branchName} created successfully.`);
-        return branchName;
-    })
-        .then((branchName) => {
-        git.checkoutLocalBranch(branchName);
-        return branchName;
-    })
-        .then((branchName) => git.push(["-u", "origin", branchName]))
-        .then(() => data);
-}
-async function toggleTags(data) {
-    return removeTags(data).then(createTags);
-}
-async function removeTags(data) {
-    const git = (0, create_git_1.createGit)();
-    const tags = data.get("tags");
     core.info("Removing Existing Tags.");
     return git.tag(["-d", ...tags]).then(() => {
         core.info("Tags removed successfully.");
-        return data;
+        return tags;
     });
 }
-async function createTags(data) {
+async function createTags(tags) {
     const git = (0, create_git_1.createGit)();
-    const tags = data.get("tags");
     core.info(`Creating Tags: ${tags}.`);
-    return Promise.all(tags.map(async (tag) => git.addTag(tag)))
+    return Promise.all([...tags].map(async (tag) => git.addTag(tag)))
         .then(() => git.pushTags())
         .then(() => {
         core.info("Tags created successfully.");
-        return data;
+        return tags;
     });
-}
-async function removeTemporaryBranch(data) {
-    const git = (0, create_git_1.createGit)();
-    const branchName = data.get("branchName");
-    core.info(`Removing branch: ${branchName}.`);
-    return git
-        .checkout("--detach")
-        .then(() => git.deleteLocalBranch(branchName))
-        .then(() => git.push(["--delete", "origin", branchName]))
-        .then(() => { });
 }
 
 
