@@ -31669,12 +31669,14 @@ const create_artifacts_1 = __nccwpck_require__(1692);
 const maybe_move_tags_1 = __nccwpck_require__(1885);
 const push_assets_1 = __nccwpck_require__(6545);
 const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
+const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
 async function main() {
     Promise.resolve()
         .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
         .then(create_artifacts_1.createArtifacts)
         .then(push_assets_1.pushAssets)
         .then(maybe_move_tags_1.maybeMoveTags)
+        .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
         .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
 exports["default"] = main;
@@ -31764,7 +31766,7 @@ const create_git_1 = __nccwpck_require__(6704);
 const core = __importStar(__nccwpck_require__(2186));
 async function maybeCreateTemporaryBranch() {
     const git = (0, create_git_1.createGit)();
-    return (isDetached()
+    return isDetached()
         .then(() => {
         return git.revparse(["--short", "HEAD"]);
     })
@@ -31777,14 +31779,14 @@ async function maybeCreateTemporaryBranch() {
     })
         .then((branchName) => {
         core.info(`Branch ${branchName} created successfully.`);
-        //return branchName;
+        return branchName;
     })
-        // .then((branchName) => {
-        //   git.push(["-u", "origin", branchName]);
-        // })
+        .then((branchName) => {
+        git.push(["-u", "origin", branchName]);
+    })
         .catch(() => {
         core.info("Skipping temporary branch creation.");
-    }));
+    });
 }
 exports.maybeCreateTemporaryBranch = maybeCreateTemporaryBranch;
 async function isDetached() {
@@ -31889,6 +31891,69 @@ async function createTags(tags) {
         .then(() => {
         core.info("Tags created successfully.");
         return tags;
+    });
+}
+
+
+/***/ }),
+
+/***/ 624:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.maybeRemoveTemporaryBranch = void 0;
+const create_git_1 = __nccwpck_require__(6704);
+const core = __importStar(__nccwpck_require__(2186));
+async function maybeRemoveTemporaryBranch() {
+    const git = (0, create_git_1.createGit)();
+    return isTemporaryBranch()
+        .then((branchName) => {
+        git.checkout("--detach");
+        return branchName;
+    })
+        .then((branchName) => {
+        git.deleteLocalBranch(branchName);
+        return branchName;
+    })
+        .then((branchName) => {
+        git.push(["--delete", "origin", branchName]);
+        return branchName;
+    })
+        .then((branchName) => {
+        core.info(`Temporary branch ${branchName} removed successfully.`);
+    });
+}
+exports.maybeRemoveTemporaryBranch = maybeRemoveTemporaryBranch;
+async function isTemporaryBranch() {
+    return new Promise((resolve, reject) => {
+        (0, create_git_1.createGit)()
+            .revparse(["--abbrev-ref", "HEAD"])
+            .then((branchName) => branchName.startsWith("ci-tag-") ? resolve(branchName) : reject());
     });
 }
 
