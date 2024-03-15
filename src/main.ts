@@ -7,10 +7,9 @@ import { maybeRemoveTemporaryBranch } from "./tasks/maybe-remove-temporary-tags"
 import { createGit } from "./create-git";
 
 async function main(): Promise<void> {
+  console.log(await createGit().tags(["--contains"]));
+
   Promise.resolve()
-    .then(() => {
-      console.log(createGit().tags(["--contains"]));
-    })
     .then(maybeCreateTemporaryBranch)
     .then(createArtifacts)
     .then(pushAssets)

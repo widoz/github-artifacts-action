@@ -31670,10 +31670,8 @@ const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
 const create_git_1 = __nccwpck_require__(6704);
 async function main() {
+    console.log(await (0, create_git_1.createGit)().tags(["--contains"]));
     Promise.resolve()
-        .then(() => {
-        console.log((0, create_git_1.createGit)().tags(["--contains"]));
-    })
         .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
         .then(create_artifacts_1.createArtifacts)
         .then(push_assets_1.pushAssets)
