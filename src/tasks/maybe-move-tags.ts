@@ -30,7 +30,10 @@ async function retrieveTags(tags: Tags): Promise<Tags> {
 
   return git
     .tags(["--contains"])
-    .then((tags) => tags.all)
+    .then((tags) => {
+      console.log(`Retrieved tags: ${tags.all}`);
+      return tags.all;
+    })
     .then((rawTags) => {
       core.info(`Retrieved tags: ${rawTags.join("\n")}`);
       rawTags.forEach((tag) => tags.add(tag));
@@ -39,7 +42,7 @@ async function retrieveTags(tags: Tags): Promise<Tags> {
 }
 
 async function assertTags(tags: Tags): Promise<Tags> {
-  if (!tags || tags.size === 0) {
+  if (tags.size === 0) {
     throw new Error("No tags found. Skipping tags handling.", {
       cause: "no-tags",
     });
