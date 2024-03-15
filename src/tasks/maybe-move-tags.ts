@@ -27,9 +27,9 @@ export async function maybeMoveTags(): Promise<void> {
 
 async function retrieveTags(tags: Tags): Promise<Tags> {
   const git = createGit();
+  const _tags = await git.tags(["--contains"]);
 
-  return git
-    .tags(["--contains"])
+  return Promise.resolve(_tags)
     .then((tags) => {
       console.log(`Retrieved tags: ${tags.all}`);
       return tags.all;

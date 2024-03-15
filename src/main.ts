@@ -4,11 +4,8 @@ import { maybeMoveTags } from "./tasks/maybe-move-tags";
 import { pushAssets } from "./tasks/push-assets";
 import { maybeCreateTemporaryBranch } from "./tasks/maybe-create-temporary-branch";
 import { maybeRemoveTemporaryBranch } from "./tasks/maybe-remove-temporary-tags";
-import { createGit } from "./create-git";
 
 async function main(): Promise<void> {
-  console.log(await createGit().tags(["--contains"]));
-
   Promise.resolve()
     .then(maybeCreateTemporaryBranch)
     .then(createArtifacts)

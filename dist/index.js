@@ -31668,9 +31668,7 @@ const maybe_move_tags_1 = __nccwpck_require__(1885);
 const push_assets_1 = __nccwpck_require__(6545);
 const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
-const create_git_1 = __nccwpck_require__(6704);
 async function main() {
-    console.log(await (0, create_git_1.createGit)().tags(["--contains"]));
     Promise.resolve()
         .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
         .then(create_artifacts_1.createArtifacts)
@@ -31855,8 +31853,8 @@ async function maybeMoveTags() {
 exports.maybeMoveTags = maybeMoveTags;
 async function retrieveTags(tags) {
     const git = (0, create_git_1.createGit)();
-    return git
-        .tags(["--contains"])
+    const _tags = await git.tags(["--contains"]);
+    return Promise.resolve(_tags)
         .then((tags) => {
         console.log(`Retrieved tags: ${tags.all}`);
         return tags.all;
