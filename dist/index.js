@@ -31592,26 +31592,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bailIfFalsy = exports.createGit = void 0;
+exports.createGit = void 0;
 const simple_git_1 = __importDefault(__nccwpck_require__(9103));
 let git = null;
 function createGit() {
     if (git) {
         return git;
     }
-    const workingDirectory = process.cwd();
-    // @ts-ignore
-    const userName = `${process.env.GIT_USER}`;
-    // @ts-ignore
-    const userEmail = `${process.env.GIT_EMAIL}`;
+    const workingDirectory = `${process.env["GITHUB_WORKSPACE"]}`;
+    const userName = `${process.env["GIT_USER"]}`;
+    const userEmail = `${process.env["GIT_EMAIL"]}`;
     try {
-        bailIfFalsy(userName, 'Git user name is empty.');
-        bailIfFalsy(userEmail, 'Git user email is empty.');
+        assertNotFalsy(workingDirectory, "Working directory is empty.");
+        assertNotFalsy(userName, "Git user name is empty.");
+        assertNotFalsy(userEmail, "Git user email is empty.");
         git = (0, simple_git_1.default)({ baseDir: workingDirectory });
         git
-            ?.addConfig('user.name', userName)
-            ?.addConfig('user.email', userEmail)
-            ?.addConfig('advice.addIgnoredFile', 'false');
+            ?.addConfig("user.name", userName)
+            ?.addConfig("user.email", userEmail)
+            ?.addConfig("advice.addIgnoredFile", "false");
     }
     catch (e) {
         console.warn(`Warning: ${e.message ?? e}`);
@@ -31622,15 +31621,14 @@ function createGit() {
 exports.createGit = createGit;
 function assertGit(git) {
     if (!git) {
-        throw new Error('Git is not initialized.');
+        throw new Error("Git is not initialized.");
     }
 }
-function bailIfFalsy(value, message) {
+function assertNotFalsy(value, message) {
     if ((Array.isArray(value) && value.length <= 0) || !value) {
-        throw new Error(message || 'Unknown error');
+        throw new Error(message || "Unknown error");
     }
 }
-exports.bailIfFalsy = bailIfFalsy;
 
 
 /***/ }),

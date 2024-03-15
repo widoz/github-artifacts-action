@@ -1,45 +1,49 @@
-import gitFactory, {SimpleGit} from 'simple-git'
+import gitFactory, { SimpleGit } from "simple-git";
 
-let git: SimpleGit | null = null
+type PossibleValue = boolean | string | number | unknown[] | undefined | null;
 
-export function createGit (): SimpleGit {
-	if (git) {
-		return git
-	}
+let git: SimpleGit | null = null;
 
-	const workingDirectory = process.cwd()
-	// @ts-ignore
-	const userName = `${process.env.GIT_USER}`
-	// @ts-ignore
-	const userEmail = `${process.env.GIT_EMAIL}`
+export function createGit(): SimpleGit {
+  if (git) {
+    return git;
+  }
 
-	try {
-		bailIfFalsy(userName, 'Git user name is empty.');
-		bailIfFalsy(userEmail, 'Git user email is empty.');
+  const workingDirectory = `${process.env["GITHUB_WORKSPACE"]}`;
+  const userName = `${process.env["GIT_USER"]}`;
+  const userEmail = `${process.env["GIT_EMAIL"]}`;
 
-		git = gitFactory({baseDir: workingDirectory})
+  try {
+    assertNotFalsy(workingDirectory, "Working directory is empty.");
+    assertNotFalsy(userName, "Git user name is empty.");
+    assertNotFalsy(userEmail, "Git user email is empty.");
 
-		git
-		  ?.addConfig('user.name', userName)
-		  ?.addConfig('user.email', userEmail)
-		  ?.addConfig('advice.addIgnoredFile', 'false')
-	} catch (e: any) {
-		console.warn(`Warning: ${e.message ?? e}`)
-	}
+    git = gitFactory({ baseDir: workingDirectory });
 
-	assertGit(git)
+    git
+      ?.addConfig("user.name", userName)
+      ?.addConfig("user.email", userEmail)
+      ?.addConfig("advice.addIgnoredFile", "false");
+  } catch (e: any) {
+    console.warn(`Warning: ${e.message ?? e}`);
+  }
 
-	return git
+  assertGit(git);
+
+  return git;
 }
 
 function assertGit(git: unknown): asserts git is SimpleGit {
-	if (!git) {
-		throw new Error('Git is not initialized.')
-	}
+  if (!git) {
+    throw new Error("Git is not initialized.");
+  }
 }
 
-export function bailIfFalsy(value: boolean | string | number | unknown[], message: string): void {
-	if ((Array.isArray(value) && value.length <= 0) || !value) {
-		throw new Error(message || 'Unknown error')
-	}
+function assertNotFalsy<Expected extends PossibleValue>(
+  value: PossibleValue,
+  message: string,
+): asserts value is Exclude<Expected, undefined | null> {
+  if ((Array.isArray(value) && value.length <= 0) || !value) {
+    throw new Error(message || "Unknown error");
+  }
 }
