@@ -32002,10 +32002,10 @@ async function pushAssets() {
         .then(() => core.startGroup("🚀 Pushing Artifacts"))
         .then(() => git.add(["-f", "./build"]))
         .then(() => git.commit("🚀 Build Artifacts"))
-        .then((commitResult) => {
+        .then(async (commitResult) => {
         const numberOfChanges = commitResult.summary.changes;
         core.info(`Committed changes: ${numberOfChanges}`);
-        return numberOfChanges > 0 ? git.push() : null;
+        return numberOfChanges > 0 ? await git.push() : null;
     })
         .then((result) => {
         const messages = result?.remoteMessages.all.join("\n");
