@@ -31663,29 +31663,27 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const create_artifacts_1 = __nccwpck_require__(1692);
-const maybe_move_tags_1 = __nccwpck_require__(1885);
-// import { pushAssets } from "./tasks/push-assets";
 const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
+const artifacts_1 = __nccwpck_require__(1870);
+const tags_1 = __nccwpck_require__(7816);
+const create_git_1 = __nccwpck_require__(6704);
 async function main() {
-    try {
-        await (0, maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)();
-        await (0, create_artifacts_1.createArtifacts)();
-        // await pushAssets();
-        await (0, maybe_move_tags_1.maybeMoveTags)();
-        await (0, maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)();
-    }
-    catch (error) {
-        core.setFailed(`Failed to create and push artifacts: ${error}`);
-    }
+    const git = (0, create_git_1.createGit)();
+    const tags = new tags_1.Tags();
+    const assets = new artifacts_1.Artifacts(git, tags);
+    Promise.resolve()
+        .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
+        .then(assets.update)
+        .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
+        .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
 exports["default"] = main;
 
 
 /***/ }),
 
-/***/ 1692:
+/***/ 1870:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -31714,21 +31712,82 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createArtifacts = void 0;
-const exec = __importStar(__nccwpck_require__(1514));
+exports.Artifacts = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-async function createArtifacts() {
-    core.startGroup("📦 Creating artifacts");
-    try {
-        await exec.exec("yarn build");
+const exec = __importStar(__nccwpck_require__(1514));
+class Artifacts {
+    static COMMAND = "yarn build";
+    static TARGET_DIR = "./build";
+    git;
+    tags;
+    constructor(git, tags) {
+        this.git = git;
+        this.tags = tags;
     }
-    catch (error) {
-        core.warning(`Failed to create artifacts: ${error}`);
-        core.endGroup();
-        throw error;
+    async update() {
+        core.startGroup("📦 Creating artifacts");
+        try {
+            await this.compile();
+            await this.push();
+        }
+        catch (error) {
+            core.warning(`Failed creating artifacts: ${error}`);
+            core.endGroup();
+            throw error;
+        }
+    }
+    async compile() {
+        await exec.exec(Artifacts.COMMAND);
+    }
+    async push() {
+        await this.tags.extract();
+        await this.git.add(["-f", Artifacts.TARGET_DIR]);
+        const commitResult = await this.git.commit("🚀 Build Artifacts");
+        const pushingResult = await this.git.push();
+        core.info(`Committed changes: ${commitResult.summary.changes}`);
+        await this.tags.move();
+        const messages = pushingResult?.remoteMessages.all.join("\n");
+        messages && core.info(`Pushed artifacts with messages: ${messages}`);
     }
 }
-exports.createArtifacts = createArtifacts;
+exports.Artifacts = Artifacts;
+
+
+/***/ }),
+
+/***/ 7816:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Tags = void 0;
+const create_git_1 = __nccwpck_require__(6704);
+class Tags {
+    tags = [];
+    git = (0, create_git_1.createGit)();
+    async extract() {
+        this.tags = (await this.git.tags(["--contains"])).all;
+    }
+    async move() {
+        await this.remove();
+        await this.create();
+    }
+    toString() {
+        if (!this.tags.length) {
+            return "";
+        }
+        return [...this.tags].join(", ");
+    }
+    async remove() {
+        await this.git.tag(["-d", ...this.tags]);
+    }
+    async create() {
+        await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
+        await this.git.pushTags();
+    }
+}
+exports.Tags = Tags;
 
 
 /***/ }),
@@ -31781,92 +31840,6 @@ exports.maybeCreateTemporaryBranch = maybeCreateTemporaryBranch;
 async function isDetached() {
     const branchName = await (0, create_git_1.createGit)().revparse(["--abbrev-ref", "HEAD"]);
     return branchName === "HEAD";
-}
-
-
-/***/ }),
-
-/***/ 1885:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.maybeMoveTags = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const create_git_1 = __nccwpck_require__(6704);
-async function maybeMoveTags() {
-    core.startGroup("🗄️ Start handling tags.");
-    return retrieveTags()
-        .then(assertTags)
-        .then(toggleTags)
-        .catch(handleError)
-        .finally(() => core.endGroup());
-}
-exports.maybeMoveTags = maybeMoveTags;
-async function retrieveTags() {
-    const git = (0, create_git_1.createGit)();
-    const tags = (await git.tags(["--contains"])).all;
-    core.info(`Retrieved tags: ${renderTags(tags)}.`);
-    return new Set(tags);
-}
-function assertTags(tags) {
-    if (tags.size === 0) {
-        throw new Error("No tags found. Skipping tags handling.", {
-            cause: "no-tags",
-        });
-    }
-    return tags;
-}
-async function toggleTags(tags) {
-    return removeTags(tags).then(createTags);
-}
-async function removeTags(tags) {
-    const git = (0, create_git_1.createGit)();
-    core.info(`Removing Existing Tags ${renderTags(tags)}.`);
-    await git.tag(["-d", ...tags]);
-    return tags;
-}
-async function createTags(tags) {
-    const git = (0, create_git_1.createGit)();
-    core.info(`Creating Tags: ${renderTags(tags)}.`);
-    await Promise.all([...tags].map(async (tag) => git.addTag(tag)));
-    await git.pushTags();
-    return tags;
-}
-function handleError(error) {
-    if (error.cause === "no-tags") {
-        core.info("No tags found. Skipping tags handling.");
-        return;
-    }
-    // Re-throw for external catching.
-    throw error;
-}
-function renderTags(tags) {
-    return [...tags].join(", ");
 }
 
 

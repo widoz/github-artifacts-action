@@ -1,20 +1,23 @@
 import * as core from "@actions/core";
-import { createArtifacts } from "./tasks/create-artifacts";
-import { maybeMoveTags } from "./tasks/maybe-move-tags";
-// import { pushAssets } from "./tasks/push-assets";
 import { maybeCreateTemporaryBranch } from "./tasks/maybe-create-temporary-branch";
 import { maybeRemoveTemporaryBranch } from "./tasks/maybe-remove-temporary-tags";
+import { Artifacts } from "./model/artifacts";
+import { Tags } from "./model/tags";
+import { createGit } from "./create-git";
 
 async function main(): Promise<void> {
-  try {
-    await maybeCreateTemporaryBranch();
-    await createArtifacts();
-    // await pushAssets();
-    await maybeMoveTags();
-    await maybeRemoveTemporaryBranch();
-  } catch (error) {
-    core.setFailed(`Failed to create and push artifacts: ${error}`);
-  }
+  const git = createGit();
+  const tags = new Tags();
+  const assets = new Artifacts(git, tags);
+
+  Promise.resolve()
+    .then(maybeCreateTemporaryBranch)
+    .then(assets.update)
+    .then(maybeRemoveTemporaryBranch)
+
+    .catch((error) =>
+      core.setFailed(`Failed to create and push artifacts: ${error}`),
+    );
 }
 
 export default main;
