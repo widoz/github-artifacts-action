@@ -29,7 +29,12 @@ export class Artifacts {
   }
 
   private async compile(): Promise<void> {
-    await exec.exec(Artifacts.COMMAND);
+    const result = await exec.exec(Artifacts.COMMAND);
+    if (result !== 0) {
+      throw new Error(
+        "Failed to compile artifacts. Process exited with non-zero code.",
+      );
+    }
   }
 
   private async push() {
