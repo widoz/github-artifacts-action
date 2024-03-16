@@ -31723,6 +31723,7 @@ class Artifacts {
     constructor(git, tags) {
         this.git = git;
         this.tags = tags;
+        this.update.bind(this);
     }
     async update() {
         core.startGroup("📦 Creating artifacts");
