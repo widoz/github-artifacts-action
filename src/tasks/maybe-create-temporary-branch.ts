@@ -11,19 +11,19 @@ export async function maybeCreateTemporaryBranch(): Promise<void> {
     .then((currentHash) => {
       return `ci-tag-${currentHash}`;
     })
-    .then((branchName) => {
-      git.checkoutLocalBranch(branchName);
+    .then(async (branchName) => {
+      await git.checkoutLocalBranch(branchName);
       return branchName;
     })
     .then((branchName) => {
       core.info(`Branch ${branchName} created successfully.`);
       return branchName;
     })
-    .then((branchName) => {
-      git.push(["-u", "origin", branchName]);
+    .then(async (branchName) => {
+      await git.push(["-u", "origin", branchName]);
     })
-    .catch(() => {
-      core.info("Skipping temporary branch creation.");
+    .catch((e) => {
+      core.info(`Skipping temporary branch creation. Reason: ${e.message}.`);
     });
 }
 

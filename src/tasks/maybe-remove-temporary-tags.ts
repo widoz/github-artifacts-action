@@ -5,20 +5,23 @@ export async function maybeRemoveTemporaryBranch(): Promise<void> {
   const git = createGit();
 
   return isTemporaryBranch()
-    .then((branchName) => {
-      git.checkout("--detach");
+    .then(async (branchName) => {
+      await git.checkout("--detach");
       return branchName;
     })
-    .then((branchName) => {
-      git.deleteLocalBranch(branchName);
+    .then(async (branchName) => {
+      await git.deleteLocalBranch(branchName);
       return branchName;
     })
-    .then((branchName) => {
-      git.push(["--delete", "origin", branchName]);
+    .then(async (branchName) => {
+      await git.push(["--delete", "origin", branchName]);
       return branchName;
     })
     .then((branchName) => {
       core.info(`Temporary branch ${branchName} removed successfully.`);
+    })
+    .catch((e) => {
+      core.info(`Skipping temporary branch removal. Reason: ${e.message}.`);
     });
 }
 

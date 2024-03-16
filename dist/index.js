@@ -31771,19 +31771,19 @@ async function maybeCreateTemporaryBranch() {
         .then((currentHash) => {
         return `ci-tag-${currentHash}`;
     })
-        .then((branchName) => {
-        git.checkoutLocalBranch(branchName);
+        .then(async (branchName) => {
+        await git.checkoutLocalBranch(branchName);
         return branchName;
     })
         .then((branchName) => {
         core.info(`Branch ${branchName} created successfully.`);
         return branchName;
     })
-        .then((branchName) => {
-        git.push(["-u", "origin", branchName]);
+        .then(async (branchName) => {
+        await git.push(["-u", "origin", branchName]);
     })
-        .catch(() => {
-        core.info("Skipping temporary branch creation.");
+        .catch((e) => {
+        core.info(`Skipping temporary branch creation. Reason: ${e.message}.`);
     });
 }
 exports.maybeCreateTemporaryBranch = maybeCreateTemporaryBranch;
@@ -31853,8 +31853,8 @@ async function maybeMoveTags() {
 exports.maybeMoveTags = maybeMoveTags;
 async function retrieveTags(tags) {
     const git = (0, create_git_1.createGit)();
-    const _tags = await git.tags(["--contains"]);
-    return Promise.resolve(_tags)
+    return git
+        .tags(["--contains"])
         .then((tags) => {
         console.log(`Retrieved tags: ${tags.all}`);
         return tags.all;
@@ -31933,20 +31933,23 @@ const core = __importStar(__nccwpck_require__(2186));
 async function maybeRemoveTemporaryBranch() {
     const git = (0, create_git_1.createGit)();
     return isTemporaryBranch()
-        .then((branchName) => {
-        git.checkout("--detach");
+        .then(async (branchName) => {
+        await git.checkout("--detach");
         return branchName;
     })
-        .then((branchName) => {
-        git.deleteLocalBranch(branchName);
+        .then(async (branchName) => {
+        await git.deleteLocalBranch(branchName);
         return branchName;
     })
-        .then((branchName) => {
-        git.push(["--delete", "origin", branchName]);
+        .then(async (branchName) => {
+        await git.push(["--delete", "origin", branchName]);
         return branchName;
     })
         .then((branchName) => {
         core.info(`Temporary branch ${branchName} removed successfully.`);
+    })
+        .catch((e) => {
+        core.info(`Skipping temporary branch removal. Reason: ${e.message}.`);
     });
 }
 exports.maybeRemoveTemporaryBranch = maybeRemoveTemporaryBranch;
