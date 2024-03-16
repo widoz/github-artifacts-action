@@ -31665,14 +31665,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const create_artifacts_1 = __nccwpck_require__(1692);
 const maybe_move_tags_1 = __nccwpck_require__(1885);
-const push_assets_1 = __nccwpck_require__(6545);
+// import { pushAssets } from "./tasks/push-assets";
 const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
 async function main() {
     try {
         await (0, maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)();
         await (0, create_artifacts_1.createArtifacts)();
-        await (0, push_assets_1.pushAssets)();
+        // await pushAssets();
         await (0, maybe_move_tags_1.maybeMoveTags)();
         await (0, maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)();
     }
@@ -31920,64 +31920,6 @@ async function temporaryBranch() {
     const branchName = await (0, create_git_1.createGit)().revparse(["--abbrev-ref", "HEAD"]);
     return branchName.startsWith("ci-tag-") ? branchName : "";
 }
-
-
-/***/ }),
-
-/***/ 6545:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pushAssets = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const create_git_1 = __nccwpck_require__(6704);
-async function pushAssets() {
-    const git = (0, create_git_1.createGit)();
-    core.startGroup("🚀 Pushing Artifacts");
-    try {
-        await git.add(["-f", "./build"]);
-        const commitResult = await git.commit("🚀 Build Artifacts");
-        const numberOfChanges = commitResult.summary.changes;
-        core.info(`Committed changes: ${numberOfChanges}`);
-        if (numberOfChanges <= 0) {
-            core.info("No changes to commit");
-        }
-        const pushingResult = await git.push();
-        const messages = pushingResult?.remoteMessages.all.join("\n");
-        messages && core.info(`Pushed artifacts with result: ${messages}`);
-    }
-    catch (error) {
-        core.warning(`Failed to push artifacts: ${error}`);
-        core.endGroup();
-        throw error;
-    }
-}
-exports.pushAssets = pushAssets;
 
 
 /***/ }),
