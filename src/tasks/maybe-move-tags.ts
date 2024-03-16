@@ -3,51 +3,31 @@ import { createGit } from "../create-git";
 
 type Tags = Set<string>;
 
-export async function maybeMoveTags(): Promise<void> {
-  return Promise.resolve(new Set<string>())
-    .then((tags) => {
-      core.startGroup("🗄️ Start handling tags.");
-      return tags;
-    })
-    .then(retrieveTags)
+export async function maybeMoveTags(): Promise<Tags | void> {
+  core.startGroup("🗄️ Start handling tags.");
+  return retrieveTags()
     .then(assertTags)
     .then(toggleTags)
-    .then(() => {})
-    .catch((error: Error) => {
-      if (error.cause === "no-tags") {
-        core.info(" No tags found. Skipping tags handling.");
-        return;
-      }
-
-      // Re-throw for external catching.
-      throw error;
-    })
+    .catch(handleError)
     .finally(() => core.endGroup());
 }
 
-async function retrieveTags(tags: Tags): Promise<Tags> {
+async function retrieveTags(): Promise<Tags> {
   const git = createGit();
+  const tags = (await git.tags(["--contains"])).all;
 
-  return git
-    .tags(["--contains"])
-    .then((tags) => {
-      console.log(`Retrieved tags: ${tags.all}`);
-      return tags.all;
-    })
-    .then((rawTags) => {
-      core.info(`Retrieved tags: ${rawTags.join("\n")}`);
-      rawTags.forEach((tag) => tags.add(tag));
-      return tags;
-    });
+  core.info(`Retrieved tags: ${renderTags(tags)}.`);
+
+  return new Set(tags);
 }
 
-async function assertTags(tags: Tags): Promise<Tags> {
+function assertTags(tags: Tags): Tags {
   if (tags.size === 0) {
     throw new Error("No tags found. Skipping tags handling.", {
       cause: "no-tags",
     });
   }
-  return Promise.resolve(tags);
+  return tags;
 }
 
 async function toggleTags(tags: Tags): Promise<Tags> {
@@ -57,23 +37,34 @@ async function toggleTags(tags: Tags): Promise<Tags> {
 async function removeTags(tags: Tags): Promise<Tags> {
   const git = createGit();
 
-  core.info("Removing Existing Tags.");
+  core.info(`Removing Existing Tags ${renderTags(tags)}.`);
 
-  return git.tag(["-d", ...tags]).then(() => {
-    core.info("Tags removed successfully.");
-    return tags;
-  });
+  await git.tag(["-d", ...tags]);
+
+  return tags;
 }
 
 async function createTags(tags: Tags): Promise<Tags> {
   const git = createGit();
 
-  core.info(`Creating Tags: ${tags}.`);
+  core.info(`Creating Tags: ${renderTags(tags)}.`);
 
-  return Promise.all([...tags].map(async (tag) => git.addTag(tag)))
-    .then(() => git.pushTags())
-    .then(() => {
-      core.info("Tags created successfully.");
-      return tags;
-    });
+  await Promise.all([...tags].map(async (tag) => git.addTag(tag)));
+  await git.pushTags();
+
+  return tags;
+}
+
+function handleError(error: Error) {
+  if (error.cause === "no-tags") {
+    core.info("No tags found. Skipping tags handling.");
+    return;
+  }
+
+  // Re-throw for external catching.
+  throw error;
+}
+
+function renderTags(tags: Tags | Array<string>): string {
+  return [...tags].join(", ");
 }

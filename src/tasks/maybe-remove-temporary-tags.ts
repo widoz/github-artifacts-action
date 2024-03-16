@@ -3,34 +3,20 @@ import * as core from "@actions/core";
 
 export async function maybeRemoveTemporaryBranch(): Promise<void> {
   const git = createGit();
+  const _temporaryBranch = await temporaryBranch();
 
-  return isTemporaryBranch()
-    .then(async (branchName) => {
-      await git.checkout("--detach");
-      return branchName;
-    })
-    .then(async (branchName) => {
-      await git.deleteLocalBranch(branchName);
-      return branchName;
-    })
-    .then(async (branchName) => {
-      await git.push(["--delete", "origin", branchName]);
-      return branchName;
-    })
-    .then((branchName) => {
-      core.info(`Temporary branch ${branchName} removed successfully.`);
-    })
-    .catch((e) => {
-      core.info(`Skipping temporary branch removal. Reason: ${e.message}.`);
-    });
+  if (!_temporaryBranch) {
+    return;
+  }
+
+  await git.checkout("--detach");
+  await git.deleteLocalBranch(_temporaryBranch);
+  await git.push(["--delete", "origin", _temporaryBranch]);
+
+  core.info(`Temporary branch ${_temporaryBranch} removed successfully.`);
 }
 
-async function isTemporaryBranch(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    createGit()
-      .revparse(["--abbrev-ref", "HEAD"])
-      .then((branchName) =>
-        branchName.startsWith("ci-tag-") ? resolve(branchName) : reject(),
-      );
-  });
+async function temporaryBranch(): Promise<string> {
+  const branchName = await createGit().revparse(["--abbrev-ref", "HEAD"]);
+  return branchName.startsWith("ci-tag-") ? branchName : "";
 }
