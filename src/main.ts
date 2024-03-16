@@ -8,11 +8,11 @@ import { createGit } from "./create-git";
 async function main(): Promise<void> {
   const git = createGit();
   const tags = new Tags();
-  const assets = new Artifacts(git, tags);
+  const artifacts = new Artifacts(git, tags);
 
   Promise.resolve()
     .then(maybeCreateTemporaryBranch)
-    .then(assets.update)
+    .then(artifacts.update)
     .then(maybeRemoveTemporaryBranch)
 
     .catch((error) =>

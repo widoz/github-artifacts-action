@@ -31671,10 +31671,10 @@ const create_git_1 = __nccwpck_require__(6704);
 async function main() {
     const git = (0, create_git_1.createGit)();
     const tags = new tags_1.Tags();
-    const assets = new artifacts_1.Artifacts(git, tags);
+    const artifacts = new artifacts_1.Artifacts(git, tags);
     Promise.resolve()
         .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
-        .then(assets.update)
+        .then(artifacts.update)
         .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
         .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
