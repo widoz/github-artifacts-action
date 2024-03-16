@@ -31674,7 +31674,7 @@ async function main() {
     const artifacts = new artifacts_1.Artifacts(git, tags);
     Promise.resolve()
         .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
-        .then(artifacts.update)
+        .then(() => artifacts.update())
         .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
         .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
@@ -31723,7 +31723,6 @@ class Artifacts {
     constructor(git, tags) {
         this.git = git;
         this.tags = tags;
-        this.update.bind(this);
     }
     async update() {
         core.startGroup("📦 Creating artifacts");

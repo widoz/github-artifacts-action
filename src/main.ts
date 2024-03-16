@@ -12,7 +12,7 @@ async function main(): Promise<void> {
 
   Promise.resolve()
     .then(maybeCreateTemporaryBranch)
-    .then(artifacts.update)
+    .then(() => artifacts.update())
     .then(maybeRemoveTemporaryBranch)
 
     .catch((error) =>

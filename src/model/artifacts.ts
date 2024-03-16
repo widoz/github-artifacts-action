@@ -13,8 +13,6 @@ export class Artifacts {
   constructor(git: SimpleGit, tags: Tags) {
     this.git = git;
     this.tags = tags;
-
-    this.update.bind(this);
   }
 
   public async update(): Promise<void> {
