@@ -31669,13 +31669,16 @@ const push_assets_1 = __nccwpck_require__(6545);
 const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
 const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
 async function main() {
-    Promise.resolve()
-        .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
-        .then(create_artifacts_1.createArtifacts)
-        .then(push_assets_1.pushAssets)
-        .then(maybe_move_tags_1.maybeMoveTags)
-        .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
-        .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
+    try {
+        await (0, maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)();
+        await (0, create_artifacts_1.createArtifacts)();
+        await (0, push_assets_1.pushAssets)();
+        await (0, maybe_move_tags_1.maybeMoveTags)();
+        await (0, maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)();
+    }
+    catch (error) {
+        core.setFailed(`Failed to create and push artifacts: ${error}`);
+    }
 }
 exports["default"] = main;
 

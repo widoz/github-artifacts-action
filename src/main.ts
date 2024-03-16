@@ -6,16 +6,15 @@ import { maybeCreateTemporaryBranch } from "./tasks/maybe-create-temporary-branc
 import { maybeRemoveTemporaryBranch } from "./tasks/maybe-remove-temporary-tags";
 
 async function main(): Promise<void> {
-  Promise.resolve()
-    .then(maybeCreateTemporaryBranch)
-    .then(createArtifacts)
-    .then(pushAssets)
-    .then(maybeMoveTags)
-    .then(maybeRemoveTemporaryBranch)
-
-    .catch((error) =>
-      core.setFailed(`Failed to create and push artifacts: ${error}`),
-    );
+  try {
+    await maybeCreateTemporaryBranch();
+    await createArtifacts();
+    await pushAssets();
+    await maybeMoveTags();
+    await maybeRemoveTemporaryBranch();
+  } catch (error) {
+    core.setFailed(`Failed to create and push artifacts: ${error}`);
+  }
 }
 
 export default main;
