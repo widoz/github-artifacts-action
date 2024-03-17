@@ -31734,6 +31734,7 @@ class Artifacts {
             core.endGroup();
             throw new Error(`Failed creating artifacts: ${error}`);
         }
+        core.endGroup();
     }
     async compile() {
         const result = await exec.exec(Artifacts.COMMAND);

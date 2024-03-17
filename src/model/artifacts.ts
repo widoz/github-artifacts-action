@@ -25,6 +25,8 @@ export class Artifacts {
       core.endGroup();
       throw new Error(`Failed creating artifacts: ${error}`);
     }
+
+    core.endGroup();
   }
 
   private async compile(): Promise<void> {
