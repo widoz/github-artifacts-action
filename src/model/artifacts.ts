@@ -38,7 +38,7 @@ export class Artifacts {
   }
 
   private async push() {
-    await this.tags.extract();
+    await this.tags.collect();
 
     await this.git.add(["-f", Artifacts.TARGET_DIR]);
     const commitResult = await this.git.commit("🚀 Build Artifacts");

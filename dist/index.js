@@ -31743,7 +31743,7 @@ class Artifacts {
         }
     }
     async push() {
-        await this.tags.extract();
+        await this.tags.collect();
         await this.git.add(["-f", Artifacts.TARGET_DIR]);
         const commitResult = await this.git.commit("🚀 Build Artifacts");
         const pushingResult = await this.git.push();
@@ -31769,7 +31769,7 @@ const create_git_1 = __nccwpck_require__(6704);
 class Tags {
     tags = [];
     git = (0, create_git_1.createGit)();
-    async extract() {
+    async collect() {
         this.tags = (await this.git.tags(["--contains"])).all;
     }
     async move() {
@@ -31784,6 +31784,7 @@ class Tags {
     }
     async remove() {
         await this.git.tag(["-d", ...this.tags]);
+        await this.git.push(["--delete", "origin", ...this.tags]);
     }
     async create() {
         await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));

@@ -5,7 +5,7 @@ export class Tags {
   private tags: Array<string> = [];
   private git: SimpleGit = createGit();
 
-  public async extract(): Promise<void> {
+  public async collect(): Promise<void> {
     this.tags = (await this.git.tags(["--contains"])).all;
   }
 
@@ -24,6 +24,7 @@ export class Tags {
 
   private async remove(): Promise<void> {
     await this.git.tag(["-d", ...this.tags]);
+    await this.git.push(["--delete", "origin", ...this.tags]);
   }
 
   private async create(): Promise<void> {
