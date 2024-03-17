@@ -20,11 +20,10 @@ export class Artifacts {
 
     try {
       await this.compile();
-      await this.push();
+      await this.deploy();
     } catch (error) {
-      core.warning(`Failed creating artifacts: ${error}`);
       core.endGroup();
-      throw error;
+      throw new Error(`Failed creating artifacts: ${error}`);
     }
   }
 
@@ -32,22 +31,38 @@ export class Artifacts {
     const result = await exec.exec(Artifacts.COMMAND);
     if (result !== 0) {
       throw new Error(
-        "Failed to compile artifacts. Process exited with non-zero code.",
+        "Failing to compile artifacts. Process exited with non-zero code.",
       );
     }
   }
 
-  private async push() {
+  private async deploy(): Promise<void> {
+    await this.add();
+
     await this.tags.collect();
-
-    await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
-    const commitResult = await this.git.commit("🚀 Build Artifacts");
-    const pushingResult = await this.git.push();
-
-    core.info(`Committed changes: ${commitResult.summary.changes}`);
-
+    await this.commit();
+    await this.push();
     await this.tags.move();
+  }
 
+  private async add(): Promise<void> {
+    const result = await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
+    if (result !== 0) {
+      throw new Error(
+        "Failing to git-add the artifacts build. Process exited with non-zero code.",
+      );
+    }
+  }
+
+  private async commit(): Promise<void> {
+    const commitResult = await this.git.commit("🚀 Build Artifacts");
+    core.info(`Committed changes: ${commitResult.summary.changes}`);
+    core.info(`Committed insertions: ${commitResult.summary.insertions}`);
+    core.info(`Committed deletions: ${commitResult.summary.deletions}`);
+  }
+
+  private async push(): Promise<void> {
+    const pushingResult = await this.git.push();
     const messages = pushingResult?.remoteMessages.all.join("\n");
     messages && core.info(`Pushed artifacts with messages: ${messages}`);
   }

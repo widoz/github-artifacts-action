@@ -1,5 +1,6 @@
 import { createGit } from "../create-git";
-import { SimpleGit } from "simple-git";
+import { PushResult, SimpleGit } from "simple-git";
+import * as core from "@actions/core";
 
 export class Tags {
   private tags: Array<string> = [];
@@ -7,14 +8,32 @@ export class Tags {
 
   public async collect(): Promise<void> {
     this.tags = (await this.git.tags(["--contains"])).all;
+    core.info(`Collecting tags: ${this.toString()}`);
   }
 
   public async move(): Promise<void> {
+    core.info(`Moving tags: ${this.toString()}`);
     await this.remove();
     await this.create();
   }
 
-  public toString(): string {
+  private async remove(): Promise<void> {
+    await this.git.tag(["-d", ...this.tags]);
+    const pushResult = await this.git.push([
+      "--delete",
+      "origin",
+      ...this.tags,
+    ]);
+    this.pushInfo(pushResult, "Removed tags with messages");
+  }
+
+  private async create(): Promise<void> {
+    await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
+    const pushResult = await this.git.pushTags();
+    this.pushInfo(pushResult, "Pushed tags with messages");
+  }
+
+  private toString(): string {
     if (!this.tags.length) {
       return "";
     }
@@ -22,13 +41,8 @@ export class Tags {
     return [...this.tags].join(", ");
   }
 
-  private async remove(): Promise<void> {
-    await this.git.tag(["-d", ...this.tags]);
-    await this.git.push(["--delete", "origin", ...this.tags]);
-  }
-
-  private async create(): Promise<void> {
-    await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
-    await this.git.pushTags();
+  private pushInfo(result: PushResult, message: string): void {
+    const messages = result?.remoteMessages.all.join("\n");
+    messages && core.info(`${message}: ${messages}`);
   }
 }

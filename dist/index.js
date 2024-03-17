@@ -31663,19 +31663,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const maybe_create_temporary_branch_1 = __nccwpck_require__(5330);
-const maybe_remove_temporary_tags_1 = __nccwpck_require__(624);
 const artifacts_1 = __nccwpck_require__(1870);
 const tags_1 = __nccwpck_require__(7816);
 const create_git_1 = __nccwpck_require__(6704);
+const temporary_branch_1 = __nccwpck_require__(2786);
 async function main() {
     const git = (0, create_git_1.createGit)();
     const tags = new tags_1.Tags();
     const artifacts = new artifacts_1.Artifacts(git, tags);
+    const temporaryBranch = new temporary_branch_1.TemporaryBranch(git);
     Promise.resolve()
-        .then(maybe_create_temporary_branch_1.maybeCreateTemporaryBranch)
+        .then(() => temporaryBranch.create())
         .then(() => artifacts.update())
-        .then(maybe_remove_temporary_tags_1.maybeRemoveTemporaryBranch)
+        .then(() => temporaryBranch.delete())
         .catch((error) => core.setFailed(`Failed to create and push artifacts: ${error}`));
 }
 exports["default"] = main;
@@ -31728,27 +31728,40 @@ class Artifacts {
         core.startGroup("📦 Creating artifacts");
         try {
             await this.compile();
-            await this.push();
+            await this.deploy();
         }
         catch (error) {
-            core.warning(`Failed creating artifacts: ${error}`);
             core.endGroup();
-            throw error;
+            throw new Error(`Failed creating artifacts: ${error}`);
         }
     }
     async compile() {
         const result = await exec.exec(Artifacts.COMMAND);
         if (result !== 0) {
-            throw new Error("Failed to compile artifacts. Process exited with non-zero code.");
+            throw new Error("Failing to compile artifacts. Process exited with non-zero code.");
         }
     }
-    async push() {
+    async deploy() {
+        await this.add();
         await this.tags.collect();
-        await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
-        const commitResult = await this.git.commit("🚀 Build Artifacts");
-        const pushingResult = await this.git.push();
-        core.info(`Committed changes: ${commitResult.summary.changes}`);
+        await this.commit();
+        await this.push();
         await this.tags.move();
+    }
+    async add() {
+        const result = await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
+        if (result !== 0) {
+            throw new Error("Failing to git-add the artifacts build. Process exited with non-zero code.");
+        }
+    }
+    async commit() {
+        const commitResult = await this.git.commit("🚀 Build Artifacts");
+        core.info(`Committed changes: ${commitResult.summary.changes}`);
+        core.info(`Committed insertions: ${commitResult.summary.insertions}`);
+        core.info(`Committed deletions: ${commitResult.summary.deletions}`);
+    }
+    async push() {
+        const pushingResult = await this.git.push();
         const messages = pushingResult?.remoteMessages.all.join("\n");
         messages && core.info(`Pushed artifacts with messages: ${messages}`);
     }
@@ -31759,22 +31772,62 @@ exports.Artifacts = Artifacts;
 /***/ }),
 
 /***/ 7816:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Tags = void 0;
 const create_git_1 = __nccwpck_require__(6704);
+const core = __importStar(__nccwpck_require__(2186));
 class Tags {
     tags = [];
     git = (0, create_git_1.createGit)();
     async collect() {
         this.tags = (await this.git.tags(["--contains"])).all;
+        core.info(`Collecting tags: ${this.toString()}`);
     }
     async move() {
+        core.info(`Moving tags: ${this.toString()}`);
         await this.remove();
         await this.create();
+    }
+    async remove() {
+        await this.git.tag(["-d", ...this.tags]);
+        const pushResult = await this.git.push([
+            "--delete",
+            "origin",
+            ...this.tags,
+        ]);
+        this.pushInfo(pushResult, "Removed tags with messages");
+    }
+    async create() {
+        await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
+        const pushResult = await this.git.pushTags();
+        this.pushInfo(pushResult, "Pushed tags with messages");
     }
     toString() {
         if (!this.tags.length) {
@@ -31782,13 +31835,9 @@ class Tags {
         }
         return [...this.tags].join(", ");
     }
-    async remove() {
-        await this.git.tag(["-d", ...this.tags]);
-        await this.git.push(["--delete", "origin", ...this.tags]);
-    }
-    async create() {
-        await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
-        await this.git.pushTags();
+    pushInfo(result, message) {
+        const messages = result?.remoteMessages.all.join("\n");
+        messages && core.info(`${message}: ${messages}`);
     }
 }
 exports.Tags = Tags;
@@ -31796,7 +31845,7 @@ exports.Tags = Tags;
 
 /***/ }),
 
-/***/ 5330:
+/***/ 2786:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -31825,78 +31874,61 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.maybeCreateTemporaryBranch = void 0;
-const create_git_1 = __nccwpck_require__(6704);
+exports.TemporaryBranch = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-async function maybeCreateTemporaryBranch() {
-    const git = (0, create_git_1.createGit)();
-    const _isDetached = await isDetached();
-    if (!_isDetached) {
-        return;
+class TemporaryBranch {
+    git;
+    constructor(git) {
+        this.git = git;
     }
-    const currentHash = await git.revparse(["--short", "HEAD"]);
-    const temporaryBranchName = `ci-tag-${currentHash}`;
-    await git.checkoutLocalBranch(temporaryBranchName);
-    core.info(`Temporary branch ${temporaryBranchName} created successfully.`);
-    await git.push(["-u", "origin", temporaryBranchName]);
-}
-exports.maybeCreateTemporaryBranch = maybeCreateTemporaryBranch;
-async function isDetached() {
-    const branchName = await (0, create_git_1.createGit)().revparse(["--abbrev-ref", "HEAD"]);
-    return branchName === "HEAD";
-}
-
-
-/***/ }),
-
-/***/ 624:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+    async create() {
+        const _isDetached = await this.isDetached();
+        if (!_isDetached) {
+            return;
+        }
+        const currentHash = await this.git.revparse(["--short", "HEAD"]);
+        const temporaryBranchName = `ci-tag-${currentHash}`;
+        await this.git.checkoutLocalBranch(temporaryBranchName);
+        const pushResult = await this.git.push([
+            "-u",
+            "origin",
+            temporaryBranchName,
+        ]);
+        this.pushInfo(pushResult, "Created temporary branch with messages");
+        core.info(`Temporary branch ${temporaryBranchName} created successfully.`);
     }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.maybeRemoveTemporaryBranch = void 0;
-const create_git_1 = __nccwpck_require__(6704);
-const core = __importStar(__nccwpck_require__(2186));
-async function maybeRemoveTemporaryBranch() {
-    const git = (0, create_git_1.createGit)();
-    const _temporaryBranch = await temporaryBranch();
-    if (!_temporaryBranch) {
-        return;
+    async delete() {
+        const _temporaryBranch = await this.branchName();
+        if (!_temporaryBranch) {
+            return;
+        }
+        await this.git.checkout("--detach");
+        const deleteResult = await this.git.deleteLocalBranch(_temporaryBranch);
+        core.info(deleteResult.success
+            ? `Temporary branch ${_temporaryBranch} deleted successfully.`
+            : `Failed to delete temporary branch ${_temporaryBranch}.`);
+        const pushResult = await this.git.push([
+            "--delete",
+            "origin",
+            _temporaryBranch,
+        ]);
+        this.pushInfo(pushResult, "Removed temporary branch with messages");
+        core.info(`Temporary branch ${_temporaryBranch} removed successfully.`);
     }
-    await git.checkout("--detach");
-    await git.deleteLocalBranch(_temporaryBranch);
-    await git.push(["--delete", "origin", _temporaryBranch]);
-    core.info(`Temporary branch ${_temporaryBranch} removed successfully.`);
+    async isDetached() {
+        const branchName = await this.git.revparse(["--abbrev-ref", "HEAD"]);
+        return branchName === "HEAD";
+    }
+    async branchName() {
+        const branchName = await this.git.revparse(["--abbrev-ref", "HEAD"]);
+        return branchName.startsWith("ci-tag-") ? branchName : "";
+    }
+    pushInfo(result, message) {
+        const messages = result?.remoteMessages.all.join("\n");
+        messages && core.info(`${message}: ${messages}`);
+    }
 }
-exports.maybeRemoveTemporaryBranch = maybeRemoveTemporaryBranch;
-async function temporaryBranch() {
-    const branchName = await (0, create_git_1.createGit)().revparse(["--abbrev-ref", "HEAD"]);
-    return branchName.startsWith("ci-tag-") ? branchName : "";
-}
+exports.TemporaryBranch = TemporaryBranch;
 
 
 /***/ }),
