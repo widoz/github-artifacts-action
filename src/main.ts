@@ -1,8 +1,8 @@
-import * as core from "@actions/core";
-import { Artifacts } from "./model/artifacts";
-import { Tags } from "./model/tags";
-import { createGit } from "./create-git";
-import { TemporaryBranch } from "./model/temporary-branch";
+import * as core from '@actions/core';
+import { Artifacts } from './model/artifacts';
+import { Tags } from './model/tags';
+import { createGit } from './create-git';
+import { TemporaryBranch } from './model/temporary-branch';
 
 async function main(): Promise<void> {
   const git = createGit();
@@ -15,9 +15,9 @@ async function main(): Promise<void> {
     .then(() => artifacts.update())
     .then(() => temporaryBranch.delete())
 
-    .catch((error) =>
-      core.setFailed(`Failed to create and push artifacts: ${error}`),
-    );
+    .catch((error) => {
+      core.setFailed(`Failed to create and push artifacts: ${error}`);
+    });
 }
 
 export default main;

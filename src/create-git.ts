@@ -1,6 +1,7 @@
-import gitFactory, { SimpleGit } from "simple-git";
+import type { SimpleGit } from 'simple-git';
+import gitFactory from 'simple-git';
 
-type PossibleValue = boolean | string | number | unknown[] | undefined | null;
+type PossibleValue = boolean | string | number | Array<unknown> | undefined | null;
 
 let git: SimpleGit | null = null;
 
@@ -9,23 +10,24 @@ export function createGit(): SimpleGit {
     return git;
   }
 
-  const workingDirectory = `${process.env["GITHUB_WORKSPACE"]}`;
-  const userName = `${process.env["GIT_USER"]}`;
-  const userEmail = `${process.env["GIT_EMAIL"]}`;
+  const workingDirectory = `${process.env['GITHUB_WORKSPACE']}`;
+  const userName = `${process.env['GIT_USER']}`;
+  const userEmail = `${process.env['GIT_EMAIL']}`;
 
   try {
-    assertNotFalsy(workingDirectory, "Working directory is empty.");
-    assertNotFalsy(userName, "Git user name is empty.");
-    assertNotFalsy(userEmail, "Git user email is empty.");
+    assertNotFalsy(workingDirectory, 'Working directory is empty.');
+    assertNotFalsy(userName, 'Git user name is empty.');
+    assertNotFalsy(userEmail, 'Git user email is empty.');
 
     git = gitFactory({ baseDir: workingDirectory });
 
     git
-      ?.addConfig("user.name", userName)
-      ?.addConfig("user.email", userEmail)
-      ?.addConfig("advice.addIgnoredFile", "false");
-  } catch (e: any) {
-    console.warn(`Warning: ${e.message ?? e}`);
+      .addConfig('user.name', userName)
+      .addConfig('user.email', userEmail)
+      .addConfig('advice.addIgnoredFile', 'false');
+  } catch (error: Error | unknown) {
+    const message = String(error instanceof Error ? error.message : error);
+    console.warn(`Warning: ${message}`);
   }
 
   assertGit(git);
@@ -33,17 +35,18 @@ export function createGit(): SimpleGit {
   return git;
 }
 
-function assertGit(git: unknown): asserts git is SimpleGit {
-  if (!git) {
-    throw new Error("Git is not initialized.");
+function assertGit(git: unknown | null): asserts git is SimpleGit {
+  if (git === null) {
+    throw new Error('Git is not initialized.');
   }
 }
 
 function assertNotFalsy<Expected extends PossibleValue>(
-  value: PossibleValue,
-  message: string,
+  value: Readonly<PossibleValue>,
+  message: string
 ): asserts value is Exclude<Expected, undefined | null> {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if ((Array.isArray(value) && value.length <= 0) || !value) {
-    throw new Error(message || "Unknown error");
+    throw new Error(message || 'Unknown error');
   }
 }
