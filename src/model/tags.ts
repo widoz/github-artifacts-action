@@ -1,13 +1,13 @@
-import { createGit } from "../create-git";
-import { PushResult, SimpleGit } from "simple-git";
-import * as core from "@actions/core";
+import type { PushResult, SimpleGit } from 'simple-git';
+import { createGit } from '../create-git';
+import * as core from '@actions/core';
 
 export class Tags {
   private tags: Array<string> = [];
-  private git: SimpleGit = createGit();
+  private readonly git: SimpleGit = createGit();
 
   public async collect(): Promise<void> {
-    this.tags = (await this.git.tags(["--contains"])).all;
+    this.tags = (await this.git.tags(['--contains'])).all;
     core.info(`Collecting tags: ${this.toString()}`);
   }
 
@@ -18,31 +18,28 @@ export class Tags {
   }
 
   private async remove(): Promise<void> {
-    await this.git.tag(["-d", ...this.tags]);
-    const pushResult = await this.git.push([
-      "--delete",
-      "origin",
-      ...this.tags,
-    ]);
-    this.pushInfo(pushResult, "Removed tags with messages");
+    await this.git.tag(['-d', ...this.tags]);
+    const pushResult = await this.git.push(['--delete', 'origin', ...this.tags]);
+    this.pushInfo(pushResult, 'Removed tags with messages');
   }
 
   private async create(): Promise<void> {
     await Promise.all(this.tags.map(async (tag) => this.git.addTag(tag)));
     const pushResult = await this.git.pushTags();
-    this.pushInfo(pushResult, "Pushed tags with messages");
+    this.pushInfo(pushResult, 'Pushed tags with messages');
   }
 
   private toString(): string {
     if (!this.tags.length) {
-      return "";
+      return '';
     }
 
-    return [...this.tags].join(", ");
+    return [...this.tags].join(', ');
   }
 
-  private pushInfo(result: PushResult, message: string): void {
-    const messages = result?.remoteMessages.all.join("\n");
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  private pushInfo(result: Readonly<PushResult>, message: string): void {
+    const messages = result.remoteMessages.all.join('\n');
     messages && core.info(`${message}: ${messages}`);
   }
 }
