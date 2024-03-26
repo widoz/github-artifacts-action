@@ -1,15 +1,14 @@
 import type { SimpleGit } from 'simple-git';
-import type { Tags } from './tags';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import type { Tags } from './tags';
+import type { Configuration } from '../configuration';
 
 export class Artifacts {
-  private static readonly COMMAND = 'yarn build';
-  private static readonly TARGET_DIR = './build';
-
   constructor(
     private readonly git: Readonly<SimpleGit>,
-    private readonly tags: Readonly<Tags>
+    private readonly tags: Readonly<Tags>,
+    private readonly configuration: Readonly<Configuration>
   ) {}
 
   public async update(): Promise<void> {
@@ -28,7 +27,7 @@ export class Artifacts {
   }
 
   private async compile(): Promise<void> {
-    const result = await exec.exec(Artifacts.COMMAND);
+    const result = await exec.exec(this.configuration.command);
     if (result !== 0) {
       throw new Error('Failing to compile artifacts. Process exited with non-zero code.');
     }
@@ -44,7 +43,7 @@ export class Artifacts {
   }
 
   private async add(): Promise<void> {
-    const result = await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
+    const result = await exec.exec(`git add -f ${this.configuration.targetDir}/*`);
     if (result !== 0) {
       throw new Error('Failing to git-add the artifacts build. Process exited with non-zero code.');
     }

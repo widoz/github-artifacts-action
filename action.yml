@@ -7,7 +7,5 @@ runs:
 inputs:
   command:
     description: 'Command to execute'
-    default: 'yarn build'
   target-dir:
     description: 'Target directory to upload'
-    default: './build'
