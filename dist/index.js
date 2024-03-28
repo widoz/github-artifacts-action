@@ -31583,6 +31583,32 @@ const main_1 = __importDefault(__nccwpck_require__(399));
 
 /***/ }),
 
+/***/ 5778:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Configuration = void 0;
+class Configuration {
+    read;
+    static COMMAND = 'yarn build';
+    static TARGET_DIR = './build';
+    constructor(read) {
+        this.read = read;
+    }
+    get command() {
+        return this.read('command') || Configuration.COMMAND;
+    }
+    get targetDir() {
+        return this.read('target-dir') || Configuration.TARGET_DIR;
+    }
+}
+exports.Configuration = Configuration;
+
+
+/***/ }),
+
 /***/ 6704:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -31669,10 +31695,12 @@ const artifacts_1 = __nccwpck_require__(1870);
 const tags_1 = __nccwpck_require__(7816);
 const create_git_1 = __nccwpck_require__(6704);
 const temporary_branch_1 = __nccwpck_require__(2786);
+const configuration_1 = __nccwpck_require__(5778);
 async function main() {
+    const configuration = new configuration_1.Configuration(core.getInput.bind(core));
     const git = (0, create_git_1.createGit)();
     const tags = new tags_1.Tags();
-    const artifacts = new artifacts_1.Artifacts(git, tags);
+    const artifacts = new artifacts_1.Artifacts(git, tags, configuration);
     const temporaryBranch = new temporary_branch_1.TemporaryBranch(git);
     Promise.resolve()
         .then(() => temporaryBranch.create())
@@ -31722,11 +31750,11 @@ const exec = __importStar(__nccwpck_require__(1514));
 class Artifacts {
     git;
     tags;
-    static COMMAND = 'yarn build';
-    static TARGET_DIR = './build';
-    constructor(git, tags) {
+    configuration;
+    constructor(git, tags, configuration) {
         this.git = git;
         this.tags = tags;
+        this.configuration = configuration;
     }
     async update() {
         core.startGroup('📦 Creating artifacts');
@@ -31742,7 +31770,7 @@ class Artifacts {
         core.endGroup();
     }
     async compile() {
-        const result = await exec.exec(Artifacts.COMMAND);
+        const result = await exec.exec(this.configuration.command);
         if (result !== 0) {
             throw new Error('Failing to compile artifacts. Process exited with non-zero code.');
         }
@@ -31755,7 +31783,7 @@ class Artifacts {
         await this.tags.move();
     }
     async add() {
-        const result = await exec.exec(`git add -f ${Artifacts.TARGET_DIR}/*`);
+        const result = await exec.exec(`git add -f ${this.configuration.targetDir}/*`);
         if (result !== 0) {
             throw new Error('Failing to git-add the artifacts build. Process exited with non-zero code.');
         }

@@ -4,3 +4,8 @@ description: 'Upload assets to GitHub Artifacts'
 runs:
   using: 'node20'
   main: './dist/index.js'
+inputs:
+  command:
+    description: 'Command to execute'
+  target-dir:
+    description: 'Target directory to upload'

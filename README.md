@@ -14,7 +14,8 @@ Assets Artifacts, is designed to compile the assets of your project and commit a
 
 ## Configuration
 
-The configuration for this action is mostly hardcoded for now. The command used for compiling the assets is always `yarn build` and the target directory is always `./build`.
+- `command` Pass the command the action has to use to build the artifacts. Default to `yarn build`.
+- `target-dir` Pass the director where the action has to store the artifacts. Default to `build`.
 
 ## Workflow Example
 
@@ -51,10 +52,13 @@ jobs:
           GIT_USER: ${{ secrets.GIT_USER }}
           GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
           HUSKY: 0
+        with:
+          command: 'npm run build'
+          target-dir: './dist'
 ```
 
 In this workflow, the action is triggered on every push event that includes a tag. The workflow runs on the latest version of Ubuntu and will not run if the commit message contains `--skip-assets-artifacts`.
 
-The workflow includes steps to checkout the repository, setup Node.js with a specified version and cache configuration, install dependencies using `yarn install`, and finally, build the artifacts using the `widoz/github-artifacts-action@v1` action.
+The workflow includes steps to check out the repository, setup Node.js with a specified version and cache configuration, install dependencies using `yarn install`, and finally, build the artifacts using the `widoz/github-artifacts-action@v1` action.
 
 The `GIT_USER` and `GIT_EMAIL` environment variables are used for the commit and should be stored as secrets in your GitHub repository. The `HUSKY` environment variable is set to `0` to disable Husky during the action run.
