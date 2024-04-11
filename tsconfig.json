@@ -28,15 +28,25 @@
       "./node_modules/@types"
     ],
     "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@model/*": [
+        "./src/model/*"
+      ],
       "*": [
         "node_modules/*",
         "types/*"
       ]
     },
-    "rootDir": "./",
+    "rootDir": "./"
   },
   "files": [
     "./index.ts"
+  ],
+  "include": [
+    "./src/**/*.ts",
+    "./tests/**/*.ts"
   ],
   "exclude": [
     "node_modules"

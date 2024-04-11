@@ -1,5 +1,5 @@
 import type { PushResult, SimpleGit } from 'simple-git';
-import { createGit } from '../create-git';
+import { createGit } from '@/create-git';
 import * as core from '@actions/core';
 
 export class Tags {

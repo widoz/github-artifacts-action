@@ -1,8 +1,8 @@
 import * as core from '@actions/core';
-import { Artifacts } from './model/artifacts';
-import { Tags } from './model/tags';
+import { Artifacts } from '@model/artifacts';
+import { Tags } from '@model/tags';
+import { TemporaryBranch } from '@model/temporary-branch';
 import { createGit } from './create-git';
-import { TemporaryBranch } from './model/temporary-branch';
 import { Configuration } from './configuration';
 
 async function main(): Promise<void> {

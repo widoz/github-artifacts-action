@@ -31693,8 +31693,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const artifacts_1 = __nccwpck_require__(1870);
 const tags_1 = __nccwpck_require__(7816);
-const create_git_1 = __nccwpck_require__(6704);
 const temporary_branch_1 = __nccwpck_require__(2786);
+const create_git_1 = __nccwpck_require__(6704);
 const configuration_1 = __nccwpck_require__(5778);
 async function main() {
     const configuration = new configuration_1.Configuration(core.getInput.bind(core));

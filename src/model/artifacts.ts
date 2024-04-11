@@ -2,7 +2,7 @@ import type { SimpleGit } from 'simple-git';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import type { Tags } from './tags';
-import type { Configuration } from '../configuration';
+import type { Configuration } from '@/configuration';
 
 export class Artifacts {
   constructor(
