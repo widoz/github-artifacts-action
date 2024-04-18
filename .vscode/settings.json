@@ -1,0 +1,4 @@
+{
+    "jest.jestCommandLine": "yarn jest",
+    "jest.rootPath": "src"
+}
