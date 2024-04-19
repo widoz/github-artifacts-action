@@ -31797,7 +31797,9 @@ class Artifacts {
     async push() {
         const pushingResult = await this.git.push();
         const messages = pushingResult.remoteMessages.all.join('\n');
-        messages && core.info(`Pushed artifacts with messages: ${messages}`);
+        if (messages) {
+            core.info(`Pushed artifacts with messages: ${messages}`);
+        }
     }
 }
 exports.Artifacts = Artifacts;

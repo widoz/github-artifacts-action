@@ -37,18 +37,38 @@ describe('Artifacts', () => {
     });
     const tags = fromPartial<Tags>({ collect: jest.fn(), move: jest.fn() });
 
-    jest.mocked(exec).mockImplementationOnce(async (command) => {
-      expect(command).toEqual('yarn build');
-      return Promise.resolve(0);
-    });
-    jest.mocked(exec).mockImplementationOnce(async (command) => {
-      expect(command).toEqual('git add -f ./build/*');
-      return Promise.resolve(0);
-    });
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
 
     const artifacts = new Artifacts(git, tags, configuration());
 
     await artifacts.update();
+
+    expect(jest.mocked(exec)).toHaveBeenNthCalledWith(1, 'yarn build');
+    expect(jest.mocked(exec)).toHaveBeenNthCalledWith(2, 'git add -f ./build/*');
+  });
+
+  it('Throw an error when failing to compile', async () => {
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(1));
+    const artifacts = new Artifacts(
+      fromPartial<SimpleGit>({}),
+      fromPartial<Tags>({}),
+      configuration()
+    );
+    await expect(artifacts.update()).rejects.toThrow(
+      'Failed creating artifacts: Failing to compile artifacts. Process exited with non-zero code.'
+    );
+  });
+
+  it('Throw an error when failing to git-add', async () => {
+    jest.mocked(exec).mockImplementation(async (command) => (command === 'yarn build' ? 0 : 1));
+    const artifacts = new Artifacts(
+      fromPartial<SimpleGit>({}),
+      fromPartial<Tags>({}),
+      configuration()
+    );
+    await expect(artifacts.update()).rejects.toThrow(
+      'Failed creating artifacts: Failing to git-add the artifacts build. Process exited with non-zero code.'
+    );
   });
 });
 

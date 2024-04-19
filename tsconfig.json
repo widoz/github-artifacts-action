@@ -46,7 +46,8 @@
   ],
   "include": [
     "./src/**/*.ts",
-    "./tests/**/*.ts"
+    "./tests/**/*.ts",
+    "jest.config.ts"
   ],
   "exclude": [
     "node_modules"
