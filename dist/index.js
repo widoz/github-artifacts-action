@@ -31699,7 +31699,7 @@ const configuration_1 = __nccwpck_require__(5778);
 async function main() {
     const configuration = new configuration_1.Configuration(core.getInput.bind(core));
     const git = (0, create_git_1.createGit)();
-    const tags = new tags_1.Tags();
+    const tags = new tags_1.Tags(git);
     const artifacts = new artifacts_1.Artifacts(git, tags, configuration);
     const temporaryBranch = new temporary_branch_1.TemporaryBranch(git);
     Promise.resolve()
@@ -31837,17 +31837,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Tags = void 0;
-const create_git_1 = __nccwpck_require__(6704);
 const core = __importStar(__nccwpck_require__(2186));
 class Tags {
+    git;
     tags = [];
-    git = (0, create_git_1.createGit)();
+    constructor(git) {
+        this.git = git;
+    }
     async collect() {
         this.tags = (await this.git.tags(['--contains'])).all;
         core.info(`Collecting tags: ${this.toString()}`);
     }
     async move() {
         core.info(`Moving tags: ${this.toString()}`);
+        if (!this.tags.length) {
+            return;
+        }
         await this.remove();
         await this.create();
     }
@@ -31870,7 +31875,9 @@ class Tags {
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     pushInfo(result, message) {
         const messages = result.remoteMessages.all.join('\n');
-        messages && core.info(`${message}: ${messages}`);
+        if (messages) {
+            core.info(`${message}: ${messages}`);
+        }
     }
 }
 exports.Tags = Tags;

@@ -1,10 +1,10 @@
 import type { PushResult, SimpleGit } from 'simple-git';
-import { createGit } from '@/create-git';
 import * as core from '@actions/core';
 
 export class Tags {
   private tags: Array<string> = [];
-  private readonly git: SimpleGit = createGit();
+
+  constructor(private readonly git: Readonly<SimpleGit>) {}
 
   public async collect(): Promise<void> {
     this.tags = (await this.git.tags(['--contains'])).all;
@@ -13,6 +13,11 @@ export class Tags {
 
   public async move(): Promise<void> {
     core.info(`Moving tags: ${this.toString()}`);
+
+    if (!this.tags.length) {
+      return;
+    }
+
     await this.remove();
     await this.create();
   }
@@ -40,6 +45,9 @@ export class Tags {
   // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   private pushInfo(result: Readonly<PushResult>, message: string): void {
     const messages = result.remoteMessages.all.join('\n');
-    messages && core.info(`${message}: ${messages}`);
+
+    if (messages) {
+      core.info(`${message}: ${messages}`);
+    }
   }
 }
