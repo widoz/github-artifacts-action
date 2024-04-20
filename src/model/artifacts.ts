@@ -16,7 +16,9 @@ export class Artifacts {
 
     try {
       await this.compile();
+      await this.tags.collect();
       await this.deploy();
+      await this.tags.move();
     } catch (error: Error | unknown) {
       core.endGroup();
       const message = String(error instanceof Error ? error.message : error);
@@ -35,11 +37,8 @@ export class Artifacts {
 
   private async deploy(): Promise<void> {
     await this.add();
-
-    await this.tags.collect();
     await this.commit();
     await this.push();
-    await this.tags.move();
   }
 
   private async add(): Promise<void> {

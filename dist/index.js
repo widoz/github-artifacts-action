@@ -31760,7 +31760,9 @@ class Artifacts {
         core.startGroup('📦 Creating artifacts');
         try {
             await this.compile();
+            await this.tags.collect();
             await this.deploy();
+            await this.tags.move();
         }
         catch (error) {
             core.endGroup();
@@ -31777,10 +31779,8 @@ class Artifacts {
     }
     async deploy() {
         await this.add();
-        await this.tags.collect();
         await this.commit();
         await this.push();
-        await this.tags.move();
     }
     async add() {
         const result = await exec.exec(`git add -f ${this.configuration.targetDir}/*`);

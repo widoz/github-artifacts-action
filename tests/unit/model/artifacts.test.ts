@@ -36,10 +36,9 @@ describe('Artifacts', () => {
       ),
     });
     const tags = fromPartial<Tags>({ collect: jest.fn(), move: jest.fn() });
+    const artifacts = new Artifacts(git, tags, configuration());
 
     jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
-
-    const artifacts = new Artifacts(git, tags, configuration());
 
     await artifacts.update();
 
@@ -48,12 +47,12 @@ describe('Artifacts', () => {
   });
 
   it('Throw an error when failing to compile', async () => {
+    const tags = fromPartial<Tags>({});
+    const git = fromPartial<SimpleGit>({});
+    const artifacts = new Artifacts(git, tags, configuration());
+
     jest.mocked(exec).mockImplementation(async () => Promise.resolve(1));
-    const artifacts = new Artifacts(
-      fromPartial<SimpleGit>({}),
-      fromPartial<Tags>({}),
-      configuration()
-    );
+
     await expect(artifacts.update()).rejects.toThrow(
       'Failed creating artifacts: Failing to compile artifacts. Process exited with non-zero code.'
     );
@@ -63,8 +62,7 @@ describe('Artifacts', () => {
     const git = fromPartial<SimpleGit>({
       commit: jest.fn(() => Promise.reject(new Error('Failed to commit'))),
     });
-    const tags = fromPartial<Tags>({ collect: jest.fn(), move: jest.fn() });
-
+    const tags = fromPartial<Tags>({ collect: jest.fn() });
     const artifacts = new Artifacts(git, tags, configuration());
 
     jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
@@ -72,16 +70,70 @@ describe('Artifacts', () => {
     await expect(artifacts.update()).rejects.toThrow('Failed creating artifacts: Failed to commit');
   });
 
+  it('Throw an error when artifacts push fails', async () => {
+    const git = fromPartial<SimpleGit>({
+      commit: jest.fn(() =>
+        Promise.resolve({ summary: { changes: 0, insertions: 0, deletions: 0 } })
+      ),
+      push: jest.fn(() => Promise.reject(new Error('Failed to push'))),
+    });
+    const tags = fromPartial<Tags>({ collect: jest.fn() });
+    const artifacts = new Artifacts(git, tags, configuration());
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    await expect(artifacts.update()).rejects.toThrow('Failed creating artifacts: Failed to push');
+  });
+
   it('Throw an error when failing to git-add', async () => {
+    const git = fromPartial<SimpleGit>({});
+    const tags = fromPartial<Tags>({ collect: jest.fn() });
+    const artifacts = new Artifacts(git, tags, configuration());
+
     jest.mocked(exec).mockImplementation(async (command) => (command === 'yarn build' ? 0 : 1));
-    const artifacts = new Artifacts(
-      fromPartial<SimpleGit>({}),
-      fromPartial<Tags>({}),
-      configuration()
-    );
+
     await expect(artifacts.update()).rejects.toThrow(
       'Failed creating artifacts: Failing to git-add the artifacts build. Process exited with non-zero code.'
     );
+  });
+
+  it('Throw an error when collecting tags fails', () => {
+    const git = fromPartial<SimpleGit>({});
+    const tags = fromPartial<Tags>({
+      collect: jest.fn(() => Promise.reject(new Error('Failed to collect tags'))),
+    });
+    const artifacts = new Artifacts(git, tags, configuration());
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    expect(artifacts.update()).rejects.toThrow('Failed creating artifacts: Failed to collect tags');
+  });
+
+  it('Collect tags before moving them', async () => {
+    const git = fromPartial<SimpleGit>({
+      commit: jest.fn(() =>
+        Promise.resolve({ summary: { changes: 0, insertions: 0, deletions: 0 } })
+      ),
+      push: jest.fn(() =>
+        Promise.resolve({
+          remoteMessages: {
+            all: [''],
+          },
+        })
+      ),
+    });
+
+    const collect = jest.fn();
+    const move = jest.fn();
+    const tags = fromPartial<Tags>({ collect, move });
+
+    const artifacts = new Artifacts(git, tags, configuration());
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    await artifacts.update();
+
+    expect(collect.mock.invocationCallOrder[0]).toBeLessThan(move.mock.invocationCallOrder[0] ?? 0);
   });
 });
 

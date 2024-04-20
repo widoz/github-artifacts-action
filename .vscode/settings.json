@@ -1,4 +1,5 @@
 {
-    "jest.jestCommandLine": "yarn jest",
-    "jest.rootPath": "src"
+  "jest.jestCommandLine": "yarn jest",
+  "jest.rootPath": "src",
+  "favorites.resources": []
 }
