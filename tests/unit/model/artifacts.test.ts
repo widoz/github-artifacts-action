@@ -59,6 +59,19 @@ describe('Artifacts', () => {
     );
   });
 
+  it('Throw an error when artifacts commit fails', async () => {
+    const git = fromPartial<SimpleGit>({
+      commit: jest.fn(() => Promise.reject(new Error('Failed to commit'))),
+    });
+    const tags = fromPartial<Tags>({ collect: jest.fn(), move: jest.fn() });
+
+    const artifacts = new Artifacts(git, tags, configuration());
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    await expect(artifacts.update()).rejects.toThrow('Failed creating artifacts: Failed to commit');
+  });
+
   it('Throw an error when failing to git-add', async () => {
     jest.mocked(exec).mockImplementation(async (command) => (command === 'yarn build' ? 0 : 1));
     const artifacts = new Artifacts(
