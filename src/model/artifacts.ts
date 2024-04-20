@@ -2,7 +2,7 @@ import type { SimpleGit } from 'simple-git';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import type { Tags } from './tags';
-import type { Configuration } from '../configuration';
+import type { Configuration } from '@/configuration';
 
 export class Artifacts {
   constructor(
@@ -16,7 +16,9 @@ export class Artifacts {
 
     try {
       await this.compile();
+      await this.tags.collect();
       await this.deploy();
+      await this.tags.move();
     } catch (error: Error | unknown) {
       core.endGroup();
       const message = String(error instanceof Error ? error.message : error);
@@ -35,11 +37,8 @@ export class Artifacts {
 
   private async deploy(): Promise<void> {
     await this.add();
-
-    await this.tags.collect();
     await this.commit();
     await this.push();
-    await this.tags.move();
   }
 
   private async add(): Promise<void> {
@@ -59,6 +58,9 @@ export class Artifacts {
   private async push(): Promise<void> {
     const pushingResult = await this.git.push();
     const messages = pushingResult.remoteMessages.all.join('\n');
-    messages && core.info(`Pushed artifacts with messages: ${messages}`);
+
+    if (messages) {
+      core.info(`Pushed artifacts with messages: ${messages}`);
+    }
   }
 }

@@ -31693,13 +31693,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const artifacts_1 = __nccwpck_require__(1870);
 const tags_1 = __nccwpck_require__(7816);
-const create_git_1 = __nccwpck_require__(6704);
 const temporary_branch_1 = __nccwpck_require__(2786);
+const create_git_1 = __nccwpck_require__(6704);
 const configuration_1 = __nccwpck_require__(5778);
 async function main() {
     const configuration = new configuration_1.Configuration(core.getInput.bind(core));
     const git = (0, create_git_1.createGit)();
-    const tags = new tags_1.Tags();
+    const tags = new tags_1.Tags(git);
     const artifacts = new artifacts_1.Artifacts(git, tags, configuration);
     const temporaryBranch = new temporary_branch_1.TemporaryBranch(git);
     Promise.resolve()
@@ -31760,7 +31760,9 @@ class Artifacts {
         core.startGroup('📦 Creating artifacts');
         try {
             await this.compile();
+            await this.tags.collect();
             await this.deploy();
+            await this.tags.move();
         }
         catch (error) {
             core.endGroup();
@@ -31777,10 +31779,8 @@ class Artifacts {
     }
     async deploy() {
         await this.add();
-        await this.tags.collect();
         await this.commit();
         await this.push();
-        await this.tags.move();
     }
     async add() {
         const result = await exec.exec(`git add -f ${this.configuration.targetDir}/*`);
@@ -31797,7 +31797,9 @@ class Artifacts {
     async push() {
         const pushingResult = await this.git.push();
         const messages = pushingResult.remoteMessages.all.join('\n');
-        messages && core.info(`Pushed artifacts with messages: ${messages}`);
+        if (messages) {
+            core.info(`Pushed artifacts with messages: ${messages}`);
+        }
     }
 }
 exports.Artifacts = Artifacts;
@@ -31835,17 +31837,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Tags = void 0;
-const create_git_1 = __nccwpck_require__(6704);
 const core = __importStar(__nccwpck_require__(2186));
 class Tags {
+    git;
     tags = [];
-    git = (0, create_git_1.createGit)();
+    constructor(git) {
+        this.git = git;
+    }
     async collect() {
         this.tags = (await this.git.tags(['--contains'])).all;
         core.info(`Collecting tags: ${this.toString()}`);
     }
     async move() {
         core.info(`Moving tags: ${this.toString()}`);
+        if (!this.tags.length) {
+            return;
+        }
         await this.remove();
         await this.create();
     }
@@ -31868,7 +31875,9 @@ class Tags {
     // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     pushInfo(result, message) {
         const messages = result.remoteMessages.all.join('\n');
-        messages && core.info(`${message}: ${messages}`);
+        if (messages) {
+            core.info(`${message}: ${messages}`);
+        }
     }
 }
 exports.Tags = Tags;
@@ -31910,7 +31919,6 @@ const core = __importStar(__nccwpck_require__(2186));
 class TemporaryBranch {
     git;
     constructor(git) {
-        this.git = git;
         this.git = git;
     }
     async create() {
