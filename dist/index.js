@@ -31920,7 +31920,6 @@ class TemporaryBranch {
     git;
     constructor(git) {
         this.git = git;
-        this.git = git;
     }
     async create() {
         const _isDetached = await this.isDetached();

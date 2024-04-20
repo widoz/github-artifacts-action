@@ -2,9 +2,7 @@ import type { PushResult, SimpleGit } from 'simple-git';
 import * as core from '@actions/core';
 
 export class TemporaryBranch {
-  constructor(private readonly git: Readonly<SimpleGit>) {
-    this.git = git;
-  }
+  constructor(private readonly git: Readonly<SimpleGit>) {}
 
   async create(): Promise<void> {
     const _isDetached = await this.isDetached();
