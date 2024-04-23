@@ -28,8 +28,11 @@ jobs:
       - name: Install
         run: yarn install
 
-      - name: Linting JavaScript
+      - name: Lint Source Code
         run: yarn lint
 
-      - name: Testing JavaScript
+      - name: Lint Tests
+        run: yarn lint:test
+
+      - name: Execute Tests
         run: yarn test

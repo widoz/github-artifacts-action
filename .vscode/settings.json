@@ -1,5 +1,6 @@
 {
   "jest.jestCommandLine": "yarn jest",
   "jest.rootPath": "src",
-  "favorites.resources": []
+  "favorites.resources": [],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

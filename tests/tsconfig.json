@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "typeRoots": ["../node_modules/@types"],
+    "paths": {
+      "@/*": ["../src/*"],
+      "@model/*": ["../src/model/*"]
+    },
+    "rootDir": "./"
+  },
+  "include": ["../src/**/*.ts", "./unit/**/*.ts", "jest.config.ts", "setup-tests.ts"],
+  "exclude": ["../node_modules"]
+}

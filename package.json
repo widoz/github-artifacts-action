@@ -27,7 +27,10 @@
   "scripts": {
     "build": "tsc --outDir build && ncc build -o dist ./index.ts",
     "prettify": "prettier --write src/**/*.ts index.ts",
-    "lint": "eslint . --ext .ts",
-    "prepare": "husky"
+    "lint": "eslint ./src --ext .ts",
+    "lint:test": "eslint --config ./tests/.eslintrc.js ./tests --ext .ts",
+    "prepare": "husky",
+    "test": "jest --config ./tests/jest.config.ts",
+    "qa": "yarn lint && yarn lint:test && yarn test"
   }
 }
