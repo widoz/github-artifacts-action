@@ -25,7 +25,7 @@
     "typescript": "~5.3.0"
   },
   "scripts": {
-    "build": "tsc --outDir build && ncc build -o dist ./index.ts",
+    "build": "tsc --outDir build && ncc -m build -o dist ./index.ts",
     "prettify": "prettier --write src/**/*.ts index.ts",
     "lint": "eslint ./src --ext .ts",
     "lint:test": "eslint --config ./tests/.eslintrc.js ./tests --ext .ts",
