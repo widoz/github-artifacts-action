@@ -5,7 +5,7 @@ type PossibleValue = boolean | string | number | Array<unknown> | undefined | nu
 
 let git: SimpleGit | null = null;
 
-export function createGit(): SimpleGit {
+export async function createGit(): Promise<SimpleGit> {
   if (git) {
     return git;
   }
@@ -21,11 +21,11 @@ export function createGit(): SimpleGit {
 
     git = gitFactory({ baseDir: workingDirectory });
 
-    git
+    await git
       .addConfig('user.name', userName)
       .addConfig('user.email', userEmail)
       .addConfig('advice.addIgnoredFile', 'false');
-  } catch (error: Error | unknown) {
+  } catch (error: unknown) {
     const message = String(error instanceof Error ? error.message : error);
     console.warn(`Warning: ${message}`);
   }
@@ -35,7 +35,7 @@ export function createGit(): SimpleGit {
   return git;
 }
 
-function assertGit(git: unknown | null): asserts git is SimpleGit {
+function assertGit(git: unknown): asserts git is SimpleGit {
   if (git === null) {
     throw new Error('Git is not initialized.');
   }

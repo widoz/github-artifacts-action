@@ -19,7 +19,7 @@ export class Artifacts {
       await this.tags.collect();
       await this.deploy();
       await this.tags.move();
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       core.endGroup();
       const message = String(error instanceof Error ? error.message : error);
       throw new Error(`Failed creating artifacts: ${message}`);
