@@ -3,6 +3,7 @@
 > A GitHub Action to upload artifacts to a release
 
 [![JS Quality Assurance](https://github.com/widoz/github-artifacts-action/actions/workflows/js-qa.yml/badge.svg)](https://github.com/widoz/github-artifacts-action/actions/workflows/js-qa.yml)
+[![codecov](https://codecov.io/gh/widoz/github-artifacts-action/graph/badge.svg?token=TF80AM1DUZ)](https://codecov.io/gh/widoz/github-artifacts-action)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/widoz/github-artifacts-action?utm_source=oss&utm_medium=github&utm_campaign=widoz%2Fgithub-artifacts-action&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 Assets Artifacts, is designed to compile the assets of your project and commit and push these assets back into the repository. It also moves the tags to point to the commit where the assets are pushed.
