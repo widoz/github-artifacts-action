@@ -72,3 +72,7 @@ In this workflow, the action is triggered on every push event that includes a ta
 The workflow includes steps to check out the repository, setup Node.js with a specified version and cache configuration, install dependencies using `yarn install`, and finally, build the artifacts using the `widoz/github-artifacts-action@v1` action.
 
 The `GIT_USER` and `GIT_EMAIL` environment variables are used for the commit and should be stored as secrets in your GitHub repository. The `HUSKY` environment variable is set to `0` to disable Husky during the action run.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
