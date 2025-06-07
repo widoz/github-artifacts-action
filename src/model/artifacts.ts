@@ -1,13 +1,13 @@
 import type { SimpleGit } from 'simple-git';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-// import type { Tags } from './tags';
+import type { Tags } from './tags';
 import type { Configuration } from '@/configuration';
 
 export class Artifacts {
   constructor(
     private readonly git: Readonly<SimpleGit>,
-    // private readonly tags: Readonly<Tags>,
+    private readonly tags: Readonly<Tags>,
     private readonly configuration: Readonly<Configuration>
   ) {}
 
@@ -16,9 +16,9 @@ export class Artifacts {
 
     try {
       await this.compile();
-      // await this.tags.collect();
+      this.configuration.isTag && (await this.tags.collect());
       await this.deploy();
-      // await this.tags.move();
+      this.configuration.isTag && (await this.tags.move());
     } catch (error: unknown) {
       core.endGroup();
       const message = String(error instanceof Error ? error.message : error);
