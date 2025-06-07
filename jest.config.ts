@@ -4,9 +4,9 @@ module.exports = {
   preset: 'ts-jest',
   moduleDirectories: ['node_modules'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/../src/$1',
-    '^@model/(.*)$': '<rootDir>/../src/model/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@model/(.*)$': '<rootDir>/src/model/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/setup-tests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup-tests.ts'],
   maxWorkers: 8,
 };

@@ -30,7 +30,7 @@
     "lint": "eslint ./src --ext .ts",
     "lint:test": "eslint --config ./tests/.eslintrc.json ./tests --ext .ts",
     "prepare": "husky",
-    "test": "jest --config ./tests/jest.config.ts",
+    "test": "jest",
     "qa": "yarn lint && yarn lint:test && yarn test"
   }
 }

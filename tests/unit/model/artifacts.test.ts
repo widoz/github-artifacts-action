@@ -135,10 +135,49 @@ describe('Artifacts', () => {
 
     expect(collect.mock.invocationCallOrder[0]).toBeLessThan(move.mock.invocationCallOrder[0] ?? 0);
   });
+
+  it('Do not perform any tasks associated to tags when the action is not running for tags', async () => {
+    const git = fromPartial<SimpleGit>({
+      commit: jest.fn(() =>
+        Promise.resolve({ summary: { changes: 0, insertions: 0, deletions: 0 } })
+      ),
+      push: jest.fn(() =>
+        Promise.resolve({
+          remoteMessages: {
+            all: [''],
+          },
+        })
+      ),
+    });
+
+    const collect = jest.fn();
+    const move = jest.fn();
+    const tags = fromPartial<Tags>({ collect, move });
+
+    const _configuration = configuration({
+      GITHUB_REF: 'refs/heads/main',
+    });
+    const artifacts = new Artifacts(git, tags, _configuration);
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    await artifacts.update();
+
+    expect(collect).not.toHaveBeenCalled();
+    expect(move).not.toHaveBeenCalled();
+  });
 });
 
-function configuration(): Configuration {
-  return new Configuration(stubGetInput());
+function configuration(env?: Readonly<NodeJS.ProcessEnv>): Configuration {
+  let _env = env;
+
+  if (!_env) {
+    _env = {
+      GITHUB_REF: 'refs/tags/v1.0.0',
+    };
+  }
+
+  return new Configuration(stubGetInput(), _env);
 }
 
 function stubGetInput(): typeof getInput {

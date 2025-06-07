@@ -16,9 +16,9 @@ export class Artifacts {
 
     try {
       await this.compile();
-      await this.tags.collect();
+      this.configuration.isTag && (await this.tags.collect());
       await this.deploy();
-      await this.tags.move();
+      this.configuration.isTag && (await this.tags.move());
     } catch (error: unknown) {
       core.endGroup();
       const message = String(error instanceof Error ? error.message : error);

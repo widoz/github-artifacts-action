@@ -9,6 +9,6 @@
     },
     "rootDir": "./"
   },
-  "include": ["../src/**/*.ts", "./unit/**/*.ts", "jest.config.ts", "setup-tests.ts"],
+  "include": ["../src/**/*.ts", "./unit/**/*.ts", "../jest.config.ts", "setup-tests.ts"],
   "exclude": ["../node_modules"]
 }
