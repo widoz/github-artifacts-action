@@ -76,4 +76,4 @@ The `GIT_USER` and `GIT_EMAIL` environment variables are used for the commit and
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
