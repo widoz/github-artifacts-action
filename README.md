@@ -31,6 +31,13 @@ on:
   push:
     tags:
       - '*'
+    branches:
+      - main
+      - master
+      - develop
+      - release/*
+      - feature/*
+      - hotfix/*
 
 jobs:
   build:
