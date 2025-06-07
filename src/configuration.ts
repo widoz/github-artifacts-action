@@ -18,7 +18,6 @@ export class Configuration {
   }
 
   public get isTag(): boolean {
-    const githubRef = this.env['GITHUB_REF'] ?? '';
-    return githubRef.startsWith('refs/tags/');
+    return (this.env['GITHUB_REF'] ?? '').startsWith('refs/tags/');
   }
 }
