@@ -1,5 +1,6 @@
 import type { SimpleGit } from 'simple-git';
 import type { Tags } from '@model/tags';
+import { info } from '@actions/core';
 import type { getInput } from '@actions/core';
 
 import { it, jest, describe, expect } from '@jest/globals';
@@ -20,6 +21,13 @@ jest.mock('@model/tags', () => ({
     move: jest.fn(),
   },
 }));
+
+jest.mock('@actions/core', () => ({
+  getInput: jest.fn(),
+  info: jest.fn(),
+  startGroup: jest.fn(),
+  endGroup: jest.fn()
+}))
 
 describe('Artifacts', () => {
   it('Compile the assets and Deploy when finished', async () => {
@@ -83,6 +91,31 @@ describe('Artifacts', () => {
     jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
 
     await expect(artifacts.update()).rejects.toThrow('Failed creating artifacts: Failed to push');
+  });
+
+  it('Do not push when the action is not configured to do so', async () => {
+    const push = jest.fn();
+    const git = fromPartial<SimpleGit>({
+      commit: jest.fn(() =>
+        Promise.resolve({ summary: { changes: 0, insertions: 0, deletions: 0 } })
+      ),
+      push,
+    });
+    const tags = fromPartial<Tags>({ collect: jest.fn(), move: jest.fn() });
+    const artifacts = new Artifacts(
+      git,
+      tags,
+      configuration(undefined, {
+        'can-push': 'false',
+      })
+    );
+
+    jest.mocked(exec).mockImplementation(async () => Promise.resolve(0));
+
+    await artifacts.update();
+
+    expect(push).not.toHaveBeenCalled();
+    expect(info).toHaveBeenCalledWith('Skipping pushing artifacts.');
   });
 
   it('Throw an error when failing to git-add', async () => {
@@ -168,7 +201,12 @@ describe('Artifacts', () => {
   });
 });
 
-function configuration(env?: Readonly<NodeJS.ProcessEnv>): Configuration {
+type InputsConfiguration = Readonly<Record<string, unknown>>;
+
+function configuration(
+  env?: Readonly<NodeJS.ProcessEnv>,
+  inputsConfiguration: InputsConfiguration = {}
+): Configuration {
   let _env = env;
 
   if (!_env) {
@@ -177,11 +215,19 @@ function configuration(env?: Readonly<NodeJS.ProcessEnv>): Configuration {
     };
   }
 
-  return new Configuration(stubGetInput(), _env);
+  return new Configuration(
+    stubGetInput({
+      command: 'yarn build',
+      'target-dir': './build',
+      'can-push': 'true',
+      ...inputsConfiguration,
+    }),
+    _env
+  );
 }
 
-function stubGetInput(): typeof getInput {
+function stubGetInput(inputsConfiguration: InputsConfiguration): typeof getInput {
   return jest.fn((name: string): string => {
-    return name === 'command' ? 'yarn build' : './build';
+    return String(Object.hasOwn(inputsConfiguration, name) ? inputsConfiguration[name] : undefined);
   });
 }

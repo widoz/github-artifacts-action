@@ -7,5 +7,11 @@ runs:
 inputs:
   command:
     description: 'Command to execute'
+    required: false
   target-dir:
     description: 'Target directory to upload'
+    required: false
+  can-push:
+    description: 'Whenever the assets shall be pushed'
+    required: false
+    default: 'true'
