@@ -67,7 +67,7 @@ jobs:
         with:
           command: 'npm run build'
           target-dir: './dist'
-          can-pus: 'false'
+          can-push: 'false'
 ```
 
 In this workflow, the action is triggered on every push event that includes a tag. The workflow runs on the latest version of Ubuntu and will not run if the commit message contains `--skip-assets-artifacts`.
