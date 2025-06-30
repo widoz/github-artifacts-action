@@ -20,4 +20,8 @@ export class Configuration {
   public get isTag(): boolean {
     return (this.env['GITHUB_REF'] ?? '').startsWith('refs/tags/');
   }
+
+  public get canPush(): boolean {
+    return this.read('can-push') === 'true';
+  }
 }

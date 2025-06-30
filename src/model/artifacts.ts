@@ -56,6 +56,11 @@ export class Artifacts {
   }
 
   private async push(): Promise<void> {
+    if (!this.configuration.canPush) {
+      core.info('Skipping pushing artifacts.');
+      return;
+    }
+
     const pushingResult = await this.git.push();
     const messages = pushingResult.remoteMessages.all.join('\n');
 
